@@ -16,6 +16,7 @@ export default function Dashboard() {
   const [customers, setCustomers] = useState([]);
   const [risks, setRisks] = useState([]);
   const [activities, setActivities] = useState([]);
+  const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
