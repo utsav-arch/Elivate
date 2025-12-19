@@ -294,6 +294,59 @@ class OpportunityCreate(BaseModel):
     expected_close_date: Optional[str] = None
     owner_id: str
 
+class Task(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    customer_id: str
+    customer_name: Optional[str] = None
+    task_type: TaskType
+    title: str
+    description: Optional[str] = None
+    priority: TaskPriority
+    status: TaskStatus
+    assigned_to_id: str
+    assigned_to_name: Optional[str] = None
+    due_date: str
+    completed_date: Optional[str] = None
+    created_by_id: str
+    created_by_name: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class TaskCreate(BaseModel):
+    customer_id: str
+    task_type: TaskType
+    title: str
+    description: Optional[str] = None
+    priority: TaskPriority = TaskPriority.MEDIUM
+    status: TaskStatus = TaskStatus.NOT_STARTED
+    assigned_to_id: str
+    due_date: str
+
+class DataLabsReport(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    customer_id: str
+    customer_name: Optional[str] = None
+    report_date: str
+    report_title: str
+    report_link: str
+    report_type: str
+    description: Optional[str] = None
+    sent_to: List[str] = []
+    created_by_id: str
+    created_by_name: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class DataLabsReportCreate(BaseModel):
+    customer_id: str
+    report_date: str
+    report_title: str
+    report_link: str
+    report_type: str
+    description: Optional[str] = None
+    sent_to: List[str] = []
+
 # Helper Functions
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
