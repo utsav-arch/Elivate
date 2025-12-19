@@ -82,6 +82,35 @@ class ActivityType(str, Enum):
     UPSELL_DISCUSSION = "Upsell/Cross-sell Discussion"
     OTHER = "Other"
 
+class TaskType(str, Enum):
+    FOLLOW_UP_CALL = "Follow-up Call"
+    FOLLOW_UP_EMAIL = "Follow-up Email"
+    SCHEDULE_MEETING = "Schedule Meeting"
+    SEND_DOCUMENT = "Send Document"
+    REVIEW_ACCOUNT = "Review Account"
+    PREPARE_QBR = "Prepare for QBR"
+    TRAINING_SESSION = "Training Session"
+    TECHNICAL_SETUP = "Technical Setup"
+    RENEWAL_PREP = "Renewal Preparation"
+    ONBOARDING_ACTIVITY = "Onboarding Activity"
+    DOCUMENTATION = "Documentation"
+    ESCALATION = "Escalation"
+    OTHER = "Other"
+
+class TaskStatus(str, Enum):
+    NOT_STARTED = "Not Started"
+    IN_PROGRESS = "In Progress"
+    BLOCKED = "Blocked"
+    WAITING_CUSTOMER = "Waiting on Customer"
+    COMPLETED = "Completed"
+    CANCELLED = "Cancelled"
+
+class TaskPriority(str, Enum):
+    CRITICAL = "Critical"
+    HIGH = "High"
+    MEDIUM = "Medium"
+    LOW = "Low"
+
 # Pydantic Models
 class User(BaseModel):
     model_config = ConfigDict(extra="ignore")
