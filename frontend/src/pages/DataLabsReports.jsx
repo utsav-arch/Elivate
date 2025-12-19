@@ -85,20 +85,20 @@ export default function DataLabsReports() {
   };
 
   if (loading && reports.length === 0) {
-    return <div className=\"flex items-center justify-center h-96\"><div className=\"spinner\"></div></div>;
+    return <div className="flex items-center justify-center h-96"><div className="spinner"></div></div>;
   }
 
   return (
-    <div className=\"px-6 py-8 space-y-6\" data-testid=\"datalabs-reports-page\">
-      <div className=\"flex items-center justify-between\">
+    <div className="px-6 py-8 space-y-6" data-testid="datalabs-reports-page">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className=\"text-3xl font-bold text-slate-800 mb-2\">Data Labs Reports</h1>
-          <p className=\"text-slate-600\">{reports.length} total reports sent</p>
+          <h1 className="text-3xl font-bold text-slate-800 mb-2">Data Labs Reports</h1>
+          <p className="text-slate-600">{reports.length} total reports sent</p>
         </div>
         <Button
           onClick={() => setShowForm(true)}
-          className=\"bg-blue-600 hover:bg-blue-700 flex items-center space-x-2\"
-          data-testid=\"add-report-button\"
+          className="bg-blue-600 hover:bg-blue-700 flex items-center space-x-2"
+          data-testid="add-report-button"
         >
           <Plus size={18} />
           <span>Add Report Entry</span>
@@ -106,9 +106,9 @@ export default function DataLabsReports() {
       </div>
 
       {/* Info Card */}
-      <Card className=\"p-6 bg-blue-50 border-blue-200\">
-        <h3 className=\"text-lg font-semibold text-blue-900 mb-2\">What are Data Labs Reports?</h3>
-        <p className=\"text-sm text-blue-800\">
+      <Card className="p-6 bg-blue-50 border-blue-200">
+        <h3 className="text-lg font-semibold text-blue-900 mb-2">What are Data Labs Reports?</h3>
+        <p className="text-sm text-blue-800">
           Data Labs Reports are customized analytics and insights reports created by CSM teams to provide 
           customers with data-driven visibility into their usage, performance, and ROI. These reports go 
           beyond standard dashboards and offer tailored analysis, benchmarking, and actionable recommendations.
@@ -116,65 +116,65 @@ export default function DataLabsReports() {
       </Card>
 
       {/* Reports List */}
-      <Card className=\"bg-white border-slate-200\">
-        <div className=\"overflow-x-auto\">
-          <table className=\"w-full\">
-            <thead className=\"bg-slate-50 border-b border-slate-200\">
+      <Card className="bg-white border-slate-200">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-slate-50 border-b border-slate-200">
               <tr>
-                <th className=\"px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider\">
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                   Report Date
                 </th>
-                <th className=\"px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider\">
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                   Customer
                 </th>
-                <th className=\"px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider\">
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                   Title
                 </th>
-                <th className=\"px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider\">
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                   Type
                 </th>
-                <th className=\"px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider\">
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                   Created By
                 </th>
-                <th className=\"px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider\">
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                   Link
                 </th>
               </tr>
             </thead>
-            <tbody className=\"bg-white divide-y divide-slate-100\">
+            <tbody className="bg-white divide-y divide-slate-100">
               {reports.length === 0 ? (
                 <tr>
-                  <td colSpan=\"6\" className=\"px-6 py-12 text-center text-slate-500\">
+                  <td colSpan="6" className="px-6 py-12 text-center text-slate-500">
                     No reports added yet
                   </td>
                 </tr>
               ) : (
                 reports.map((report) => (
-                  <tr key={report.id} className=\"hover:bg-slate-50 transition-colors\">
-                    <td className=\"px-6 py-4 text-sm text-slate-800\">
+                  <tr key={report.id} className="hover:bg-slate-50 transition-colors">
+                    <td className="px-6 py-4 text-sm text-slate-800">
                       {new Date(report.report_date).toLocaleDateString()}
                     </td>
-                    <td className=\"px-6 py-4 text-sm font-medium text-slate-800\">
+                    <td className="px-6 py-4 text-sm font-medium text-slate-800">
                       {report.customer_name}
                     </td>
-                    <td className=\"px-6 py-4 text-sm text-slate-800\">
+                    <td className="px-6 py-4 text-sm text-slate-800">
                       {report.report_title}
                     </td>
-                    <td className=\"px-6 py-4 text-sm text-slate-600\">
+                    <td className="px-6 py-4 text-sm text-slate-600">
                       {report.report_type}
                     </td>
-                    <td className=\"px-6 py-4 text-sm text-slate-600\">
+                    <td className="px-6 py-4 text-sm text-slate-600">
                       {report.created_by_name}
                     </td>
-                    <td className=\"px-6 py-4\">
+                    <td className="px-6 py-4">
                       <a
                         href={report.report_link}
-                        target=\"_blank\"
-                        rel=\"noopener noreferrer\"
-                        className=\"flex items-center space-x-1 text-blue-600 hover:text-blue-700\"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center space-x-1 text-blue-600 hover:text-blue-700"
                       >
                         <ExternalLink size={16} />
-                        <span className=\"text-sm\">View</span>
+                        <span className="text-sm">View</span>
                       </a>
                     </td>
                   </tr>
@@ -188,45 +188,45 @@ export default function DataLabsReports() {
       {/* Add Report Form */}
       {showForm && (
         <Dialog open={true} onOpenChange={setShowForm}>
-          <DialogContent className=\"max-w-2xl max-h-[90vh] overflow-y-auto\">
+          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Add Data Labs Report Entry</DialogTitle>
             </DialogHeader>
 
-            <form onSubmit={handleSubmit} className=\"space-y-4\">
-              <div className=\"space-y-2\">
-                <Label htmlFor=\"customer_id\">Customer *</Label>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="customer_id">Customer *</Label>
                 <select
-                  id=\"customer_id\"
-                  className=\"w-full px-3 py-2 border border-slate-300 rounded-md\"
+                  id="customer_id"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-md"
                   value={formData.customer_id}
                   onChange={(e) => setFormData({ ...formData, customer_id: e.target.value })}
                   required
                 >
-                  <option value=\"\">Select Customer</option>
+                  <option value="">Select Customer</option>
                   {customers.map(customer => (
                     <option key={customer.id} value={customer.id}>{customer.company_name}</option>
                   ))}
                 </select>
               </div>
 
-              <div className=\"grid grid-cols-2 gap-4\">
-                <div className=\"space-y-2\">
-                  <Label htmlFor=\"report_date\">Report Date *</Label>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="report_date">Report Date *</Label>
                   <Input
-                    id=\"report_date\"
-                    type=\"date\"
+                    id="report_date"
+                    type="date"
                     value={formData.report_date}
                     onChange={(e) => setFormData({ ...formData, report_date: e.target.value })}
                     required
                   />
                 </div>
 
-                <div className=\"space-y-2\">
-                  <Label htmlFor=\"report_type\">Report Type *</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="report_type">Report Type *</Label>
                   <select
-                    id=\"report_type\"
-                    className=\"w-full px-3 py-2 border border-slate-300 rounded-md\"
+                    id="report_type"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-md"
                     value={formData.report_type}
                     onChange={(e) => setFormData({ ...formData, report_type: e.target.value })}
                     required
@@ -238,51 +238,51 @@ export default function DataLabsReports() {
                 </div>
               </div>
 
-              <div className=\"space-y-2\">
-                <Label htmlFor=\"report_title\">Report Title *</Label>
+              <div className="space-y-2">
+                <Label htmlFor="report_title">Report Title *</Label>
                 <Input
-                  id=\"report_title\"
-                  placeholder=\"e.g., Q4 2025 Usage Analysis for Customer\"
+                  id="report_title"
+                  placeholder="e.g., Q4 2025 Usage Analysis for Customer"
                   value={formData.report_title}
                   onChange={(e) => setFormData({ ...formData, report_title: e.target.value })}
                   required
-                  data-testid=\"report-form-title\"
+                  data-testid="report-form-title"
                 />
               </div>
 
-              <div className=\"space-y-2\">
-                <Label htmlFor=\"report_link\">Report Link *</Label>
+              <div className="space-y-2">
+                <Label htmlFor="report_link">Report Link *</Label>
                 <Input
-                  id=\"report_link\"
-                  type=\"url\"
-                  placeholder=\"https://...\"
+                  id="report_link"
+                  type="url"
+                  placeholder="https://..."
                   value={formData.report_link}
                   onChange={(e) => setFormData({ ...formData, report_link: e.target.value })}
                   required
-                  data-testid=\"report-form-link\"
+                  data-testid="report-form-link"
                 />
               </div>
 
-              <div className=\"space-y-2\">
-                <Label htmlFor=\"description\">Description</Label>
+              <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
                 <textarea
-                  id=\"description\"
-                  className=\"w-full px-3 py-2 border border-slate-300 rounded-md min-h-[80px]\"
-                  placeholder=\"Key insights and findings from this report...\"
+                  id="description"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-md min-h-[80px]"
+                  placeholder="Key insights and findings from this report..."
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 />
               </div>
 
-              <div className=\"flex justify-end space-x-3 pt-4 border-t\">
-                <Button type=\"button\" variant=\"outline\" onClick={() => setShowForm(false)}>
+              <div className="flex justify-end space-x-3 pt-4 border-t">
+                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
                   Cancel
                 </Button>
                 <Button
-                  type=\"submit\"
+                  type="submit"
                   disabled={loading}
-                  className=\"bg-blue-600 hover:bg-blue-700\"
-                  data-testid=\"report-form-submit\"
+                  className="bg-blue-600 hover:bg-blue-700"
+                  data-testid="report-form-submit"
                 >
                   {loading ? 'Saving...' : 'Add Report'}
                 </Button>
