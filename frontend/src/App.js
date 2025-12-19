@@ -105,6 +105,18 @@ function App() {
               )
             }
           />
+          <Route
+            path="*"
+            element={
+              user ? (
+                <Layout user={user} onLogout={handleLogout}>
+                  <ComingSoon />
+                </Layout>
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
         </Routes>
       </BrowserRouter>
       <Toaster position="top-right" />
