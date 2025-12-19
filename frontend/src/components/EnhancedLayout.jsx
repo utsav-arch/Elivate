@@ -44,7 +44,7 @@ export default function EnhancedLayout({ children, user, onLogout }) {
   ];
 
   return (
-    <div className=\"min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 flex\">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-100 flex">
       {/* Sidebar */}
       <aside className={`${sidebarCollapsed ? 'w-20' : 'w-64'} bg-white border-r border-slate-200 fixed left-0 top-0 h-full transition-all duration-300 z-40 flex flex-col`}>
         {/* Logo */}
