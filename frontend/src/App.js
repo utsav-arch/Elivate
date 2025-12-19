@@ -129,6 +129,30 @@ function App() {
             }
           />
           <Route
+            path="/tasks"
+            element={
+              user ? (
+                <Layout user={user} onLogout={handleLogout}>
+                  <TaskList />
+                </Layout>
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
+          <Route
+            path="/data-labs-reports"
+            element={
+              user ? (
+                <Layout user={user} onLogout={handleLogout}>
+                  <DataLabsReports />
+                </Layout>
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
+          <Route
             path="*"
             element={
               user ? (
