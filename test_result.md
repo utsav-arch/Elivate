@@ -173,11 +173,15 @@ backend:
 
   - task: "Risks API"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "medium"
-    needs_retesting: true
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ Risks API working: GET /api/risks (retrieved 6 existing risks), POST /api/risks (creates risk). Created test risk successfully."
 
   - task: "Opportunities API"
     implemented: true
