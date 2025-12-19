@@ -282,8 +282,6 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Tasks API (CRUD)"
-    - "Data Labs Reports API"
     - "Tasks Page - Create Task flow"
     - "Data Labs Reports Page - Add Report flow"
   stuck_tasks: []
