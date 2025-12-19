@@ -744,6 +744,127 @@ async def get_opportunities(customer_id: Optional[str] = None, current_user: Dic
             opp['updated_at'] = datetime.fromisoformat(opp['updated_at'])
     return opportunities
 
+# Task Routes
+@api_router.post("/tasks", response_model=Task)
+async def create_task(task_data: TaskCreate, current_user: Dict = Depends(get_current_user)):
+    # Get customer name
+    customer = await db.customers.find_one({"id": task_data.customer_id}, {"_id": 0})
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    
+    # Get assigned user name
+    assigned_user = await db.users.find_one({"id": task_data.assigned_to_id}, {"_id": 0})
+    created_by = await db.users.find_one({"id": current_user['user_id']}, {"_id": 0})
+    
+    task = Task(
+        **task_data.model_dump(),
+        customer_name=customer.get('company_name'),
+        assigned_to_name=assigned_user.get('name') if assigned_user else None,
+        created_by_id=current_user['user_id'],
+        created_by_name=created_by.get('name') if created_by else None
+    )
+    
+    task_dict = task.model_dump()
+    task_dict['created_at'] = task_dict['created_at'].isoformat()
+    task_dict['updated_at'] = task_dict['updated_at'].isoformat()
+    
+    await db.tasks.insert_one(task_dict)
+    
+    if isinstance(task_dict['created_at'], str):
+        task_dict['created_at'] = datetime.fromisoformat(task_dict['created_at'])
+    if isinstance(task_dict['updated_at'], str):
+        task_dict['updated_at'] = datetime.fromisoformat(task_dict['updated_at'])
+    
+    return Task(**task_dict)
+
+@api_router.get("/tasks", response_model=List[Task])
+async def get_tasks(customer_id: Optional[str] = None, assigned_to_id: Optional[str] = None, status: Optional[str] = None, current_user: Dict = Depends(get_current_user)):
+    query = {}
+    if customer_id:
+        query['customer_id'] = customer_id
+    if assigned_to_id:
+        query['assigned_to_id'] = assigned_to_id
+    if status:
+        query['status'] = status
+    
+    tasks = await db.tasks.find(query, {"_id": 0}).sort("due_date", 1).to_list(1000)
+    for task in tasks:
+        if isinstance(task['created_at'], str):
+            task['created_at'] = datetime.fromisoformat(task['created_at'])
+        if isinstance(task['updated_at'], str):
+            task['updated_at'] = datetime.fromisoformat(task['updated_at'])
+    return tasks
+
+@api_router.put("/tasks/{task_id}", response_model=Task)
+async def update_task(task_id: str, task_data: TaskCreate, current_user: Dict = Depends(get_current_user)):
+    existing = await db.tasks.find_one({"id": task_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Task not found")
+    
+    update_dict = task_data.model_dump()
+    update_dict['updated_at'] = datetime.now(timezone.utc).isoformat()
+    
+    # If status changed to Completed, set completed_date
+    if task_data.status == TaskStatus.COMPLETED and existing.get('status') != 'Completed':
+        update_dict['completed_date'] = datetime.now(timezone.utc).date().isoformat()
+    
+    await db.tasks.update_one({"id": task_id}, {"$set": update_dict})
+    
+    updated = await db.tasks.find_one({"id": task_id}, {"_id": 0})
+    if isinstance(updated['created_at'], str):
+        updated['created_at'] = datetime.fromisoformat(updated['created_at'])
+    if isinstance(updated['updated_at'], str):
+        updated['updated_at'] = datetime.fromisoformat(updated['updated_at'])
+    
+    return Task(**updated)
+
+@api_router.delete("/tasks/{task_id}")
+async def delete_task(task_id: str, current_user: Dict = Depends(get_current_user)):
+    result = await db.tasks.delete_one({"id": task_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return {"message": "Task deleted successfully"}
+
+# Data Labs Reports Routes
+@api_router.post("/datalabs-reports", response_model=DataLabsReport)
+async def create_datalabs_report(report_data: DataLabsReportCreate, current_user: Dict = Depends(get_current_user)):
+    # Get customer name
+    customer = await db.customers.find_one({"id": report_data.customer_id}, {"_id": 0})
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    
+    # Get created by user name
+    created_by = await db.users.find_one({"id": current_user['user_id']}, {"_id": 0})
+    
+    report = DataLabsReport(
+        **report_data.model_dump(),
+        customer_name=customer.get('company_name'),
+        created_by_id=current_user['user_id'],
+        created_by_name=created_by.get('name') if created_by else None
+    )
+    
+    report_dict = report.model_dump()
+    report_dict['created_at'] = report_dict['created_at'].isoformat()
+    
+    await db.datalabs_reports.insert_one(report_dict)
+    
+    if isinstance(report_dict['created_at'], str):
+        report_dict['created_at'] = datetime.fromisoformat(report_dict['created_at'])
+    
+    return DataLabsReport(**report_dict)
+
+@api_router.get("/datalabs-reports", response_model=List[DataLabsReport])
+async def get_datalabs_reports(customer_id: Optional[str] = None, current_user: Dict = Depends(get_current_user)):
+    query = {}
+    if customer_id:
+        query['customer_id'] = customer_id
+    
+    reports = await db.datalabs_reports.find(query, {"_id": 0}).sort("report_date", -1).to_list(1000)
+    for report in reports:
+        if isinstance(report['created_at'], str):
+            report['created_at'] = datetime.fromisoformat(report['created_at'])
+    return reports
+
 # Dashboard Stats
 @api_router.get("/dashboard/stats")
 async def get_dashboard_stats(current_user: Dict = Depends(get_current_user)):
@@ -765,6 +886,14 @@ async def get_dashboard_stats(current_user: Dict = Depends(get_current_user)):
         {"$group": {"_id": None, "total": {"$sum": "$value"}}}
     ]).to_list(1)
     
+    # Task stats
+    my_tasks = await db.tasks.count_documents({"assigned_to_id": current_user['user_id'], "status": {"$ne": "Completed"}})
+    overdue_tasks = await db.tasks.count_documents({
+        "assigned_to_id": current_user['user_id'],
+        "status": {"$ne": "Completed"},
+        "due_date": {"$lt": datetime.now(timezone.utc).date().isoformat()}
+    })
+    
     return {
         "total_customers": total_customers,
         "total_arr": total_arr[0]['total'] if total_arr and total_arr[0].get('total') else 0,
@@ -774,7 +903,9 @@ async def get_dashboard_stats(current_user: Dict = Depends(get_current_user)):
         "open_risks": open_risks,
         "critical_risks": critical_risks,
         "active_opportunities": active_opportunities,
-        "pipeline_value": pipeline_value[0]['total'] if pipeline_value and pipeline_value[0].get('total') else 0
+        "pipeline_value": pipeline_value[0]['total'] if pipeline_value and pipeline_value[0].get('total') else 0,
+        "my_tasks": my_tasks,
+        "overdue_tasks": overdue_tasks
     }
 
 # Include router
