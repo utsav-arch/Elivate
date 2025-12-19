@@ -25,17 +25,20 @@ export default function Dashboard() {
 
   const loadDashboardData = async () => {
     try {
-      const [statsRes, customersRes, risksRes, activitiesRes] = await Promise.all([
+      const userData = JSON.parse(localStorage.getItem('user'));
+      const [statsRes, customersRes, risksRes, activitiesRes, tasksRes] = await Promise.all([
         axios.get(`${API}/dashboard/stats`),
         axios.get(`${API}/customers`),
         axios.get(`${API}/risks`),
-        axios.get(`${API}/activities`)
+        axios.get(`${API}/activities`),
+        axios.get(`${API}/tasks?assigned_to_id=${userData.id}`)
       ]);
 
       setStats(statsRes.data);
       setCustomers(customersRes.data);
       setRisks(risksRes.data.filter(r => r.status === 'Open').slice(0, 5));
       setActivities(activitiesRes.data.slice(0, 10));
+      setTasks(tasksRes.data.filter(t => t.status !== 'Completed').slice(0, 5));
     } catch (error) {
       console.error('Error loading dashboard:', error);
     } finally {
