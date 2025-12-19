@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import CustomerList from './pages/CustomerList';
 import CustomerDetail from './pages/CustomerDetail';
+import ComingSoon from './pages/ComingSoon';
 import Layout from './components/Layout';
 import { Toaster } from './components/ui/sonner';
 import './App.css';
