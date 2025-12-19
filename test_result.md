@@ -185,11 +185,15 @@ backend:
 
   - task: "Opportunities API"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "medium"
-    needs_retesting: true
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ Opportunities API working: GET /api/opportunities (retrieved 20 existing opportunities), POST /api/opportunities (creates opportunity). Created test opportunity successfully."
 
 frontend:
   - task: "Login Page"
