@@ -55,6 +55,22 @@ export default function Layout({ children, user, onLogout }) {
                   <Users size={18} />
                   <span>Customers</span>
                 </Link>
+                <Link
+                  to="/reports"
+                  className="px-4 py-2 rounded-lg flex items-center space-x-2 text-slate-600 hover:bg-slate-100 transition-all"
+                  data-testid="nav-reports"
+                >
+                  <FileText size={18} />
+                  <span>Reports</span>
+                </Link>
+                <Link
+                  to="/pipeline"
+                  className="px-4 py-2 rounded-lg flex items-center space-x-2 text-slate-600 hover:bg-slate-100 transition-all"
+                  data-testid="nav-pipeline"
+                >
+                  <TrendingUp size={18} />
+                  <span>Pipeline</span>
+                </Link>
               </nav>
             </div>
 
