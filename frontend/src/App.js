@@ -8,7 +8,7 @@ import CustomerDetail from './pages/CustomerDetail';
 import TaskList from './pages/TaskList';
 import DataLabsReports from './pages/DataLabsReports';
 import ComingSoon from './pages/ComingSoon';
-import Layout from './components/Layout';
+import Layout from './components/EnhancedLayout';
 import { Toaster } from './components/ui/sonner';
 import './App.css';
 
