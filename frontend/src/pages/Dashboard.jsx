@@ -184,7 +184,7 @@ export default function Dashboard() {
         <Card className="bg-white border-slate-200 shadow-sm">
           <CardHeader>
             <CardTitle className="flex items-center space-x-2">
-              <DollarSign className="h-5 w-5 text-blue-600" />
+              <IndianRupee className="h-5 w-5 text-blue-600" />
               <span>Top Customers by ARR</span>
             </CardTitle>
           </CardHeader>
@@ -195,7 +195,7 @@ export default function Dashboard() {
                 <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                 <YAxis tick={{ fontSize: 12 }} />
                 <Tooltip 
-                  formatter={(value) => `$${value.toLocaleString()}`}
+                  formatter={(value) => formatINR(value)}
                   contentStyle={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '8px' }}
                 />
                 <Bar dataKey="arr" fill="#3b82f6" radius={[8, 8, 0, 0]} />
