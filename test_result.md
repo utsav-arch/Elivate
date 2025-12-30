@@ -219,6 +219,66 @@ backend:
         agent: "testing"
         comment: "✅ Bulk Upload API working: POST /api/customers/bulk-upload successfully tested. Uploaded 3/3 test customers via CSV with 0 errors. Correctly rejects non-CSV files and handles malformed CSV with proper error reporting. CSM email mapping to user IDs working correctly."
 
+  - task: "Activity Update API"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ Activity Update API working: PUT /api/activities/{activity_id} successfully tested. Updated activity title, summary, internal notes, sentiment, and follow-up status. All field updates working correctly."
+
+  - task: "Risk Update API"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ Risk Update API working: PUT /api/risks/{risk_id} successfully tested. Updated risk severity (Medium→Low), title, description, mitigation plan, revenue impact, and churn probability. All field updates working correctly with proper validation."
+
+  - task: "Opportunity Update API"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ Opportunity Update API working: PUT /api/opportunities/{opportunity_id} successfully tested. Updated opportunity title, description, value ($75K→$112.5K), probability (70%→85%), and stage (Qualified→Proposal). All field updates working correctly."
+
+  - task: "Stakeholder Management APIs"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ Stakeholder APIs working: POST /api/customers/{customer_id}/stakeholders successfully adds stakeholders with full contact details. PUT /api/customers/{customer_id}/stakeholders/{stakeholder_id} successfully updates stakeholder information. Both APIs working correctly with proper data persistence."
+
+  - task: "Document Management APIs"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ Document APIs working: POST /api/customers/{customer_id}/documents successfully adds documents with metadata (type, title, description, URL, file info). GET /api/customers/{customer_id}/documents successfully retrieves document list. Both APIs working correctly with proper data persistence and user attribution."
+
 frontend:
   - task: "Login Page"
     implemented: true
