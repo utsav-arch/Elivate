@@ -365,7 +365,8 @@ class APITester:
         
         success, response, status_code = self.make_request("POST", "/opportunities", opportunity_data)
         if success and "id" in response:
-            self.log_result("opportunities", "Create Opportunity", True, f"Created opportunity with ID: {response['id']}")
+            self.opportunity_id = response["id"]
+            self.log_result("opportunities", "Create Opportunity", True, f"Created opportunity with ID: {self.opportunity_id}")
         else:
             self.log_result("opportunities", "Create Opportunity", False, f"Failed to create opportunity: {response}", response)
 
