@@ -698,6 +698,13 @@ TechCorp,Technology,ExtraColumn
         self.test_health_status_api()  # New feature - Health Status Update
         self.test_bulk_upload_api()    # New feature - Bulk Upload
         
+        # Test new update APIs
+        self.test_activity_updates_api()    # New feature - Activity Updates
+        self.test_risk_updates_api()        # New feature - Risk Updates
+        self.test_opportunity_updates_api() # New feature - Opportunity Updates
+        self.test_stakeholders_api()        # New feature - Stakeholder Management
+        self.test_documents_api()           # New feature - Document Management
+        
         return self.print_summary()
 
 if __name__ == "__main__":
