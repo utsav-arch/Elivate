@@ -137,7 +137,7 @@ export default function Dashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-slate-800" data-testid="pipeline-value-stat">
-              ${(stats?.pipeline_value || 0).toLocaleString()}
+              {formatINR(stats?.pipeline_value || 0)}
             </div>
             <p className="text-xs text-slate-500 mt-1">
               {stats?.active_opportunities || 0} opportunities
