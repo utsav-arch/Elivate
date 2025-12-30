@@ -431,11 +431,13 @@ class APITester:
         """Test Bulk Upload API"""
         print("\n=== Testing Bulk Upload API ===")
         
-        # Create a simple CSV content for testing
-        csv_content = """company_name,industry,region,plan_type,arr,renewal_date,csm_email
-TechCorp Solutions,Technology,North America,License,150000,2025-12-31,admin@convin.ai
-DataFlow Inc,Analytics,Europe,Hourly,75000,2025-06-30,admin@convin.ai
-CloudSync Ltd,Cloud Services,Asia Pacific,License,200000,2025-09-15,admin@convin.ai"""
+        # Create a simple CSV content for testing with unique names
+        import time
+        timestamp = str(int(time.time()))
+        csv_content = f"""company_name,industry,region,plan_type,arr,renewal_date,csm_email
+TechCorp Solutions {timestamp},Technology,North America,License,150000,2025-12-31,admin@convin.ai
+DataFlow Inc {timestamp},Analytics,Europe,Hourly,75000,2025-06-30,admin@convin.ai
+CloudSync Ltd {timestamp},Cloud Services,Asia Pacific,License,200000,2025-09-15,admin@convin.ai"""
         
         # Create a temporary file-like object
         import io
