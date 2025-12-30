@@ -41,6 +41,7 @@ export default function EnhancedLayout({ children, user, onLogout }) {
     { path: '/opportunities', icon: TrendingUp, label: 'Opportunities', testId: 'nav-opportunities', badge: 'Soon' },
     { path: '/activities', icon: Activity, label: 'Activities', testId: 'nav-activities', badge: 'Soon' },
     { path: '/data-labs-reports', icon: FileText, label: 'Data Labs', testId: 'nav-reports' },
+    { path: '/settings', icon: Settings, label: 'Settings', testId: 'nav-settings' },
   ];
 
   return (
