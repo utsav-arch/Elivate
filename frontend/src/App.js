@@ -154,6 +154,18 @@ function App() {
             }
           />
           <Route
+            path="/settings"
+            element={
+              user ? (
+                <Layout user={user} onLogout={handleLogout}>
+                  <Settings />
+                </Layout>
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
+          <Route
             path="*"
             element={
               user ? (
