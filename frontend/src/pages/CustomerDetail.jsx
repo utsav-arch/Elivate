@@ -728,30 +728,104 @@ export default function CustomerDetail() {
             ) : (
               <div className="space-y-3">
                 {documents.map((doc) => (
-                  <div key={doc.id} className="border border-slate-200 rounded-lg p-4 flex items-center justify-between hover:bg-slate-50 transition-colors">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <FileText size={20} className="text-blue-600" />
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-slate-800">{doc.title}</h4>
-                        <div className="flex items-center space-x-2 text-xs text-slate-500">
-                          <Badge variant="outline">{doc.document_type}</Badge>
-                          <span>{new Date(doc.created_at).toLocaleDateString('en-IN')}</span>
+                  <div key={doc.id} className="border border-slate-200 rounded-lg p-4 hover:bg-slate-50 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4">
+                        <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                          <FileText size={24} className="text-blue-600" />
+                        </div>
+                        <div>
+                          <h4 className="font-medium text-slate-800">{doc.title}</h4>
+                          <div className="flex items-center space-x-2 text-xs text-slate-500 mt-1">
+                            <Badge variant="outline">{doc.document_type}</Badge>
+                            <span>{new Date(doc.created_at).toLocaleDateString('en-IN')}</span>
+                            {doc.file_name && <span>• {doc.file_name}</span>}
+                          </div>
+                          {doc.description && (
+                            <p className="text-sm text-slate-600 mt-1">{doc.description}</p>
+                          )}
                         </div>
                       </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      {doc.document_url && (
-                        <a href={doc.document_url} target="_blank" rel="noopener noreferrer">
-                          <Button variant="ghost" size="sm">
-                            <ExternalLink size={16} />
-                          </Button>
-                        </a>
-                      )}
+                      <div className="flex items-center space-x-2">
+                        {doc.document_url && (
+                          <>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setPreviewDocument(doc)}
+                              className="flex items-center space-x-1"
+                            >
+                              <Eye size={14} />
+                              <span>Preview</span>
+                            </Button>
+                            <a href={doc.document_url} target="_blank" rel="noopener noreferrer" download>
+                              <Button variant="outline" size="sm" className="flex items-center space-x-1">
+                                <Download size={14} />
+                                <span>Download</span>
+                              </Button>
+                            </a>
+                          </>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteDocument(doc.id)}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 size={16} />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* Document Preview Modal */}
+            {previewDocument && (
+              <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] flex flex-col">
+                  <div className="flex items-center justify-between p-4 border-b">
+                    <div>
+                      <h3 className="font-semibold text-slate-800">{previewDocument.title}</h3>
+                      <p className="text-sm text-slate-500">{previewDocument.document_type}</p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <a href={previewDocument.document_url} target="_blank" rel="noopener noreferrer" download>
+                        <Button variant="outline" size="sm">
+                          <Download size={16} className="mr-1" />
+                          Download
+                        </Button>
+                      </a>
+                      <Button variant="ghost" size="sm" onClick={() => setPreviewDocument(null)}>
+                        ×
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="flex-1 overflow-auto p-4">
+                    {previewDocument.document_url?.endsWith('.pdf') ? (
+                      <iframe
+                        src={previewDocument.document_url}
+                        className="w-full h-[600px] border rounded"
+                        title="Document Preview"
+                      />
+                    ) : previewDocument.document_url?.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                      <img
+                        src={previewDocument.document_url}
+                        alt={previewDocument.title}
+                        className="max-w-full mx-auto"
+                      />
+                    ) : (
+                      <div className="text-center py-12">
+                        <FileText size={48} className="mx-auto mb-4 text-slate-400" />
+                        <p className="text-slate-600 mb-4">Preview not available for this file type</p>
+                        <a href={previewDocument.document_url} target="_blank" rel="noopener noreferrer">
+                          <Button>Open in New Tab</Button>
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
           </TabsContent>
