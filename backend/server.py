@@ -156,6 +156,8 @@ class Customer(BaseModel):
     region: Optional[str] = None
     plan_type: Optional[PlanType] = None
     arr: Optional[float] = None
+    one_time_setup_cost: Optional[float] = None
+    quarterly_consumption_cost: Optional[float] = None
     contract_start_date: Optional[str] = None
     contract_end_date: Optional[str] = None
     renewal_date: Optional[str] = None
