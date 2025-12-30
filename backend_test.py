@@ -34,7 +34,12 @@ class APITester:
             "risks": {"passed": 0, "failed": 0, "details": []},
             "opportunities": {"passed": 0, "failed": 0, "details": []},
             "health_status": {"passed": 0, "failed": 0, "details": []},
-            "bulk_upload": {"passed": 0, "failed": 0, "details": []}
+            "bulk_upload": {"passed": 0, "failed": 0, "details": []},
+            "activity_updates": {"passed": 0, "failed": 0, "details": []},
+            "risk_updates": {"passed": 0, "failed": 0, "details": []},
+            "opportunity_updates": {"passed": 0, "failed": 0, "details": []},
+            "stakeholders": {"passed": 0, "failed": 0, "details": []},
+            "documents": {"passed": 0, "failed": 0, "details": []}
         }
 
     def log_result(self, category: str, test_name: str, success: bool, message: str, response_data: Any = None):
