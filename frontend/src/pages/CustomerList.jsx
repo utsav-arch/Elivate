@@ -11,6 +11,17 @@ import CustomerForm from '../components/CustomerForm';
 import BulkUploadModal from '../components/BulkUploadModal';
 import { toast } from 'sonner';
 
+// Format currency in INR
+const formatINR = (amount) => {
+  if (!amount) return '₹0';
+  if (amount >= 10000000) {
+    return `₹${(amount / 10000000).toFixed(1)}Cr`;
+  } else if (amount >= 100000) {
+    return `₹${(amount / 100000).toFixed(1)}L`;
+  }
+  return `₹${amount.toLocaleString('en-IN')}`;
+};
+
 export default function CustomerList() {
   const navigate = useNavigate();
   const [customers, setCustomers] = useState([]);
