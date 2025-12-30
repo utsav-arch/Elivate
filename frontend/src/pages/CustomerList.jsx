@@ -97,16 +97,22 @@ export default function CustomerList() {
     }
   };
 
-  const getOnboardingBadgeClass = (status) => {
+  const getAccountStatusBadgeClass = (status) => {
     switch (status) {
-      case 'Completed':
-        return 'status-completed';
-      case 'In Progress':
-        return 'status-in-progress';
-      case 'Not Started':
-        return 'status-not-started';
+      case 'Live':
+        return 'bg-green-100 text-green-700';
+      case 'Onboarding':
+        return 'bg-blue-100 text-blue-700';
+      case 'UAT':
+        return 'bg-purple-100 text-purple-700';
+      case 'POC/Pilot':
+        return 'bg-orange-100 text-orange-700';
+      case 'Hold':
+        return 'bg-yellow-100 text-yellow-700';
+      case 'Churn':
+        return 'bg-red-100 text-red-700';
       default:
-        return 'bg-slate-100 text-slate-600';
+        return 'bg-green-100 text-green-700';
     }
   };
 
