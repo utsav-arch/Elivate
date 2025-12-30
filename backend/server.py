@@ -875,6 +875,100 @@ async def get_opportunities(customer_id: Optional[str] = None, current_user: Dic
             opp['updated_at'] = datetime.fromisoformat(opp['updated_at'])
     return opportunities
 
+@api_router.put("/opportunities/{opportunity_id}")
+async def update_opportunity(opportunity_id: str, opp_data: dict, current_user: Dict = Depends(get_current_user)):
+    existing = await db.opportunities.find_one({"id": opportunity_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Opportunity not found")
+    
+    update_dict = {k: v for k, v in opp_data.items() if v is not None}
+    update_dict['updated_at'] = datetime.now(timezone.utc).isoformat()
+    
+    await db.opportunities.update_one({"id": opportunity_id}, {"$set": update_dict})
+    return {"message": "Opportunity updated successfully"}
+
+@api_router.put("/risks/{risk_id}")
+async def update_risk(risk_id: str, risk_data: dict, current_user: Dict = Depends(get_current_user)):
+    existing = await db.risks.find_one({"id": risk_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Risk not found")
+    
+    update_dict = {k: v for k, v in risk_data.items() if v is not None}
+    update_dict['updated_at'] = datetime.now(timezone.utc).isoformat()
+    
+    await db.risks.update_one({"id": risk_id}, {"$set": update_dict})
+    return {"message": "Risk updated successfully"}
+
+# Stakeholder Routes
+@api_router.post("/customers/{customer_id}/stakeholders")
+async def add_stakeholder(customer_id: str, stakeholder: dict, current_user: Dict = Depends(get_current_user)):
+    existing = await db.customers.find_one({"id": customer_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    
+    stakeholder['id'] = str(uuid.uuid4())
+    stakeholder['created_at'] = datetime.now(timezone.utc).isoformat()
+    
+    await db.customers.update_one(
+        {"id": customer_id},
+        {"$push": {"stakeholders": stakeholder}}
+    )
+    return {"message": "Stakeholder added successfully", "id": stakeholder['id']}
+
+@api_router.put("/customers/{customer_id}/stakeholders/{stakeholder_id}")
+async def update_stakeholder(customer_id: str, stakeholder_id: str, stakeholder: dict, current_user: Dict = Depends(get_current_user)):
+    result = await db.customers.update_one(
+        {"id": customer_id, "stakeholders.id": stakeholder_id},
+        {"$set": {"stakeholders.$": {**stakeholder, "id": stakeholder_id}}}
+    )
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Stakeholder not found")
+    return {"message": "Stakeholder updated successfully"}
+
+# Document Routes
+class Document(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    customer_id: str
+    document_type: str
+    title: str
+    description: Optional[str] = None
+    document_url: Optional[str] = None
+    file_name: Optional[str] = None
+    file_size: Optional[int] = None
+    created_by_id: Optional[str] = None
+    created_by_name: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+@api_router.post("/customers/{customer_id}/documents")
+async def add_document(customer_id: str, document: dict, current_user: Dict = Depends(get_current_user)):
+    existing = await db.customers.find_one({"id": customer_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    
+    user = await db.users.find_one({"id": current_user['user_id']}, {"_id": 0})
+    
+    doc = {
+        "id": str(uuid.uuid4()),
+        "customer_id": customer_id,
+        "document_type": document.get('document_type'),
+        "title": document.get('title'),
+        "description": document.get('description'),
+        "document_url": document.get('document_url'),
+        "file_name": document.get('file_name'),
+        "file_size": document.get('file_size'),
+        "created_by_id": current_user['user_id'],
+        "created_by_name": user.get('name') if user else None,
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.documents.insert_one(doc)
+    return {"message": "Document added successfully", "id": doc['id']}
+
+@api_router.get("/customers/{customer_id}/documents")
+async def get_documents(customer_id: str, current_user: Dict = Depends(get_current_user)):
+    documents = await db.documents.find({"customer_id": customer_id}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return documents
+
 # Task Routes
 @api_router.post("/tasks", response_model=Task)
 async def create_task(task_data: TaskCreate, current_user: Dict = Depends(get_current_user)):
