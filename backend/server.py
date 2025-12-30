@@ -970,6 +970,13 @@ async def get_documents(customer_id: str, current_user: Dict = Depends(get_curre
     documents = await db.documents.find({"customer_id": customer_id}, {"_id": 0}).sort("created_at", -1).to_list(100)
     return documents
 
+@api_router.delete("/customers/{customer_id}/documents/{document_id}")
+async def delete_document(customer_id: str, document_id: str, current_user: Dict = Depends(get_current_user)):
+    result = await db.documents.delete_one({"id": document_id, "customer_id": customer_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Document not found")
+    return {"message": "Document deleted successfully"}
+
 # Task Routes
 @api_router.post("/tasks", response_model=Task)
 async def create_task(task_data: TaskCreate, current_user: Dict = Depends(get_current_user)):
