@@ -531,6 +531,10 @@ TechCorp,Technology,ExtraColumn
         self.test_risks_api()      # Medium priority
         self.test_opportunities_api()  # Medium priority
         
+        # Test new features
+        self.test_health_status_api()  # New feature - Health Status Update
+        self.test_bulk_upload_api()    # New feature - Bulk Upload
+        
         return self.print_summary()
 
 if __name__ == "__main__":
