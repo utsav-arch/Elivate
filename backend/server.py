@@ -587,6 +587,119 @@ async def delete_customer(customer_id: str, current_user: Dict = Depends(get_cur
         raise HTTPException(status_code=404, detail="Customer not found")
     return {"message": "Customer deleted successfully"}
 
+# Health Status Update with optional risk creation
+class HealthStatusUpdate(BaseModel):
+    health_status: str
+
+@api_router.put("/customers/{customer_id}/health")
+async def update_customer_health(customer_id: str, health_update: HealthStatusUpdate, current_user: Dict = Depends(get_current_user)):
+    existing = await db.customers.find_one({"id": customer_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    
+    # Map health status to score range
+    health_score_map = {
+        "Healthy": 85,
+        "At Risk": 65,
+        "Critical": 35
+    }
+    
+    new_health_score = health_score_map.get(health_update.health_status, existing.get('health_score', 50))
+    
+    update_dict = {
+        'health_status': health_update.health_status,
+        'health_score': new_health_score,
+        'updated_at': datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.customers.update_one({"id": customer_id}, {"$set": update_dict})
+    
+    return {"message": "Health status updated", "health_status": health_update.health_status, "health_score": new_health_score}
+
+# Bulk Upload Response Model
+class BulkUploadResult(BaseModel):
+    success_count: int
+    error_count: int
+    total_rows: int
+    errors: List[Dict[str, Any]] = []
+
+@api_router.post("/customers/bulk-upload", response_model=BulkUploadResult)
+async def bulk_upload_customers(file: UploadFile = File(...), current_user: Dict = Depends(get_current_user)):
+    if not file.filename.endswith('.csv'):
+        raise HTTPException(status_code=400, detail="Only CSV files are accepted")
+    
+    content = await file.read()
+    decoded = content.decode('utf-8')
+    reader = csv.DictReader(io.StringIO(decoded))
+    
+    success_count = 0
+    error_count = 0
+    errors = []
+    total_rows = 0
+    
+    for row_num, row in enumerate(reader, start=2):  # Start at 2 to account for header
+        total_rows += 1
+        try:
+            # Validate required field
+            if not row.get('company_name'):
+                errors.append({"row": row_num, "error": "Missing company_name"})
+                error_count += 1
+                continue
+            
+            # Check for existing customer
+            existing = await db.customers.find_one({"company_name": row['company_name']})
+            if existing:
+                errors.append({"row": row_num, "error": f"Customer '{row['company_name']}' already exists"})
+                error_count += 1
+                continue
+            
+            # Get CSM owner ID from email if provided
+            csm_owner_id = None
+            csm_owner_name = None
+            if row.get('csm_email'):
+                csm = await db.users.find_one({"email": row['csm_email']}, {"_id": 0})
+                if csm:
+                    csm_owner_id = csm['id']
+                    csm_owner_name = csm['name']
+            
+            # Create customer
+            customer_dict = {
+                "id": str(uuid.uuid4()),
+                "company_name": row['company_name'],
+                "website": row.get('website', ''),
+                "industry": row.get('industry', ''),
+                "region": row.get('region', ''),
+                "plan_type": row.get('plan_type', 'License'),
+                "arr": float(row['arr']) if row.get('arr') else 0,
+                "renewal_date": row.get('renewal_date', ''),
+                "onboarding_status": "Not Started",
+                "health_score": 75,
+                "health_status": "Healthy",
+                "csm_owner_id": csm_owner_id,
+                "csm_owner_name": csm_owner_name,
+                "products_purchased": [],
+                "active_users": 0,
+                "total_licensed_users": 0,
+                "tags": [],
+                "stakeholders": [],
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }
+            
+            await db.customers.insert_one(customer_dict)
+            success_count += 1
+            
+        except Exception as e:
+            errors.append({"row": row_num, "error": str(e)})
+            error_count += 1
+    
+    return BulkUploadResult(
+        success_count=success_count,
+        error_count=error_count,
+        total_rows=total_rows,
+        errors=errors
+    )
+
 # Activity Routes
 @api_router.post("/activities", response_model=Activity)
 async def create_activity(activity_data: ActivityCreate, current_user: Dict = Depends(get_current_user)):
