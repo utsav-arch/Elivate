@@ -6,8 +6,9 @@ import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
-import { Plus, Search, Filter } from 'lucide-react';
+import { Plus, Search, Filter, Upload } from 'lucide-react';
 import CustomerForm from '../components/CustomerForm';
+import BulkUploadModal from '../components/BulkUploadModal';
 import { toast } from 'sonner';
 
 export default function CustomerList() {
