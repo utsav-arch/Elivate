@@ -493,6 +493,156 @@ TechCorp,Technology,ExtraColumn
         else:
             self.log_result("bulk_upload", "Malformed CSV Handling", False, f"Failed to process malformed CSV: {response}", response)
 
+    def test_activity_updates_api(self):
+        """Test Activity Update API (PUT /api/activities/{activity_id})"""
+        print("\n=== Testing Activity Update API ===")
+        
+        if not self.activity_id:
+            self.log_result("activity_updates", "Activity Update API Setup", False, "No activity_id available for testing")
+            return
+        
+        # Test PUT - Update activity
+        update_data = {
+            "title": "UPDATED: Weekly sync meeting with customer team",
+            "summary": "UPDATED: Discussed project progress, upcoming milestones, and addressed customer concerns",
+            "internal_notes": "UPDATED: Customer seems very satisfied with progress. Training scheduled for next week.",
+            "sentiment": "Very Positive",
+            "follow_up_required": False
+        }
+        
+        success, response, status_code = self.make_request("PUT", f"/activities/{self.activity_id}", update_data)
+        if success and "message" in response:
+            self.log_result("activity_updates", "Update Activity", True, f"Successfully updated activity {self.activity_id}")
+        else:
+            self.log_result("activity_updates", "Update Activity", False, f"Failed to update activity: {response}", response)
+
+    def test_risk_updates_api(self):
+        """Test Risk Update API (PUT /api/risks/{risk_id})"""
+        print("\n=== Testing Risk Update API ===")
+        
+        if not self.risk_id:
+            self.log_result("risk_updates", "Risk Update API Setup", False, "No risk_id available for testing")
+            return
+        
+        # Test PUT - Update risk
+        update_data = {
+            "title": "UPDATED: Declining user engagement metrics",
+            "description": "UPDATED: Customer's active user count has decreased by 25% over the past month, but showing signs of improvement",
+            "severity": "Low",
+            "status": "In Progress",
+            "mitigation_plan": "UPDATED: Training sessions scheduled and additional support resources provided",
+            "churn_probability": 15
+        }
+        
+        success, response, status_code = self.make_request("PUT", f"/risks/{self.risk_id}", update_data)
+        if success and "message" in response:
+            self.log_result("risk_updates", "Update Risk", True, f"Successfully updated risk {self.risk_id}")
+        else:
+            self.log_result("risk_updates", "Update Risk", False, f"Failed to update risk: {response}", response)
+
+    def test_opportunity_updates_api(self):
+        """Test Opportunity Update API (PUT /api/opportunities/{opportunity_id})"""
+        print("\n=== Testing Opportunity Update API ===")
+        
+        if not self.opportunity_id:
+            self.log_result("opportunity_updates", "Opportunity Update API Setup", False, "No opportunity_id available for testing")
+            return
+        
+        # Test PUT - Update opportunity
+        update_data = {
+            "title": "UPDATED: Additional license expansion",
+            "description": "UPDATED: Customer confirmed interest in purchasing 75 additional licenses for new department",
+            "value": 112500.0,
+            "probability": 85,
+            "stage": "Proposal"
+        }
+        
+        success, response, status_code = self.make_request("PUT", f"/opportunities/{self.opportunity_id}", update_data)
+        if success and "message" in response:
+            self.log_result("opportunity_updates", "Update Opportunity", True, f"Successfully updated opportunity {self.opportunity_id}")
+        else:
+            self.log_result("opportunity_updates", "Update Opportunity", False, f"Failed to update opportunity: {response}", response)
+
+    def test_stakeholders_api(self):
+        """Test Stakeholder APIs"""
+        print("\n=== Testing Stakeholder APIs ===")
+        
+        if not self.customer_id:
+            self.log_result("stakeholders", "Stakeholder API Setup", False, "No customer_id available for testing")
+            return
+        
+        # Test POST - Add stakeholder
+        stakeholder_data = {
+            "full_name": "John Smith",
+            "email": "john.smith@customer.com",
+            "phone": "+1-555-0123",
+            "job_title": "IT Director",
+            "role_type": "Technical Decision Maker",
+            "is_primary": True
+        }
+        
+        success, response, status_code = self.make_request("POST", f"/customers/{self.customer_id}/stakeholders", stakeholder_data)
+        if success and "id" in response:
+            self.stakeholder_id = response["id"]
+            self.log_result("stakeholders", "Add Stakeholder", True, f"Successfully added stakeholder with ID: {self.stakeholder_id}")
+        else:
+            self.log_result("stakeholders", "Add Stakeholder", False, f"Failed to add stakeholder: {response}", response)
+            return
+        
+        # Test PUT - Update stakeholder
+        update_stakeholder_data = {
+            "full_name": "John Smith",
+            "email": "john.smith@customer.com",
+            "phone": "+1-555-0124",
+            "job_title": "Senior IT Director",
+            "role_type": "Primary Technical Decision Maker",
+            "is_primary": True
+        }
+        
+        success, response, status_code = self.make_request("PUT", f"/customers/{self.customer_id}/stakeholders/{self.stakeholder_id}", update_stakeholder_data)
+        if success and "message" in response:
+            self.log_result("stakeholders", "Update Stakeholder", True, f"Successfully updated stakeholder {self.stakeholder_id}")
+        else:
+            self.log_result("stakeholders", "Update Stakeholder", False, f"Failed to update stakeholder: {response}", response)
+
+    def test_documents_api(self):
+        """Test Document APIs"""
+        print("\n=== Testing Document APIs ===")
+        
+        if not self.customer_id:
+            self.log_result("documents", "Document API Setup", False, "No customer_id available for testing")
+            return
+        
+        # Test POST - Add document
+        document_data = {
+            "document_type": "Contract",
+            "title": "Q4 2024 Service Agreement",
+            "description": "Annual service agreement for Q4 2024 including SLA terms and conditions",
+            "document_url": "https://docs.convin.ai/contracts/q4-2024-service-agreement.pdf",
+            "file_name": "Q4_2024_Service_Agreement.pdf",
+            "file_size": 2048576
+        }
+        
+        success, response, status_code = self.make_request("POST", f"/customers/{self.customer_id}/documents", document_data)
+        if success and "id" in response:
+            self.document_id = response["id"]
+            self.log_result("documents", "Add Document", True, f"Successfully added document with ID: {self.document_id}")
+        else:
+            self.log_result("documents", "Add Document", False, f"Failed to add document: {response}", response)
+            return
+        
+        # Test GET - List documents
+        success, response, status_code = self.make_request("GET", f"/customers/{self.customer_id}/documents")
+        if success and isinstance(response, list) and len(response) > 0:
+            # Check if our document is in the list
+            found_document = any(doc.get("id") == self.document_id for doc in response)
+            if found_document:
+                self.log_result("documents", "List Documents", True, f"Successfully retrieved {len(response)} documents including new document")
+            else:
+                self.log_result("documents", "List Documents", False, f"Document not found in list of {len(response)} documents")
+        else:
+            self.log_result("documents", "List Documents", False, f"Failed to get documents: {response}", response)
+
     def print_summary(self):
         """Print test summary"""
         print("\n" + "="*60)
