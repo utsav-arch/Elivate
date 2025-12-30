@@ -105,11 +105,11 @@ export default function Dashboard() {
         <Card className="bg-white border-slate-200 shadow-sm hover:shadow-md transition-shadow">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-slate-600">Total ARR</CardTitle>
-            <DollarSign className="h-5 w-5 text-green-600" />
+            <IndianRupee className="h-5 w-5 text-green-600" />
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-slate-800" data-testid="total-arr-stat">
-              ${(stats?.total_arr || 0).toLocaleString()}
+              {formatINR(stats?.total_arr || 0)}
             </div>
             <p className="text-xs text-slate-500 mt-1">Annual recurring revenue</p>
           </CardContent>
