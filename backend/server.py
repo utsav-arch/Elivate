@@ -164,6 +164,7 @@ class Customer(BaseModel):
     go_live_date: Optional[str] = None
     products_purchased: List[str] = []
     onboarding_status: OnboardingStatus = OnboardingStatus.NOT_STARTED
+    account_status: Optional[str] = "Live"  # POC/Pilot, Onboarding, UAT, Live, Hold, Churn
     health_score: float = 50.0
     health_status: HealthStatus = HealthStatus.AT_RISK
     risk_level: Optional[str] = None
