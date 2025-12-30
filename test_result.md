@@ -195,6 +195,30 @@ backend:
         agent: "testing"
         comment: "✅ Opportunities API working: GET /api/opportunities (retrieved 20 existing opportunities), POST /api/opportunities (creates opportunity). Created test opportunity successfully."
 
+  - task: "Health Status Update API"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ Health Status Update API working: PUT /api/customers/{id}/health successfully tested. Changed health status from Healthy → At Risk → Critical → Healthy. Health scores updated correctly (85→65→35→85). All status transitions working properly."
+
+  - task: "Bulk Upload API"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ Bulk Upload API working: POST /api/customers/bulk-upload successfully tested. Uploaded 3/3 test customers via CSV with 0 errors. Correctly rejects non-CSV files and handles malformed CSV with proper error reporting. CSM email mapping to user IDs working correctly."
+
 frontend:
   - task: "Login Page"
     implemented: true
