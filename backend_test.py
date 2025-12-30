@@ -57,13 +57,17 @@ class APITester:
         self.results[category]["details"].append(detail)
         print(f"{status}: {test_name} - {message}")
 
-    def make_request(self, method: str, endpoint: str, data: Dict = None, headers: Dict = None) -> tuple:
+    def make_request(self, method: str, endpoint: str, data: Dict = None, headers: Dict = None, files: Dict = None) -> tuple:
         """Make HTTP request and return (success, response_data, status_code)"""
         url = f"{self.base_url}{endpoint}"
         
-        default_headers = {"Content-Type": "application/json"}
+        default_headers = {}
         if self.token:
             default_headers["Authorization"] = f"Bearer {self.token}"
+        
+        # Only set Content-Type for non-file uploads
+        if not files:
+            default_headers["Content-Type"] = "application/json"
         
         if headers:
             default_headers.update(headers)
@@ -72,7 +76,11 @@ class APITester:
             if method.upper() == "GET":
                 response = requests.get(url, headers=default_headers, timeout=30)
             elif method.upper() == "POST":
-                response = requests.post(url, json=data, headers=default_headers, timeout=30)
+                if files:
+                    # For file uploads, don't use json parameter
+                    response = requests.post(url, files=files, headers=default_headers, timeout=30)
+                else:
+                    response = requests.post(url, json=data, headers=default_headers, timeout=30)
             elif method.upper() == "PUT":
                 response = requests.put(url, json=data, headers=default_headers, timeout=30)
             elif method.upper() == "DELETE":
