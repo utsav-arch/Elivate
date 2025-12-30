@@ -222,7 +222,7 @@ export default function CustomerList() {
                   Plan Type
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
-                  Onboarding
+                  Account Status
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                   CSM Owner
@@ -266,15 +266,15 @@ export default function CustomerList() {
                       {customer.plan_type || '-'}
                     </td>
                     <td className="px-6 py-4">
-                      <Badge className={`${getOnboardingBadgeClass(customer.onboarding_status)} px-2 py-1 text-xs`}>
-                        {customer.onboarding_status}
+                      <Badge className={`${getAccountStatusBadgeClass(customer.account_status)} px-2 py-1 text-xs`}>
+                        {customer.account_status || 'Live'}
                       </Badge>
                     </td>
                     <td className="px-6 py-4 text-sm text-slate-600">
                       {customer.csm_owner_name || '-'}
                     </td>
                     <td className="px-6 py-4 text-sm text-slate-600">
-                      {customer.renewal_date ? new Date(customer.renewal_date).toLocaleDateString() : '-'}
+                      {customer.renewal_date ? new Date(customer.renewal_date).toLocaleDateString('en-IN') : '-'}
                     </td>
                   </tr>
                 ))
