@@ -291,7 +291,8 @@ class APITester:
         
         success, response, status_code = self.make_request("POST", "/activities", activity_data)
         if success and "id" in response:
-            self.log_result("activities", "Create Activity", True, f"Created activity with ID: {response['id']}")
+            self.activity_id = response["id"]
+            self.log_result("activities", "Create Activity", True, f"Created activity with ID: {self.activity_id}")
         else:
             self.log_result("activities", "Create Activity", False, f"Failed to create activity: {response}", response)
 
