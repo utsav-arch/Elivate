@@ -287,7 +287,11 @@ metadata:
   run_ui: true
 
 test_plan:
-  current_focus: []
+  current_focus:
+    - "Customer Edit Forms - Basic Info, Products, Users"
+    - "Health Change Modal with Risk Creation"
+    - "Bulk Upload Feature"
+    - "Settings Page"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
@@ -299,3 +303,5 @@ agent_communication:
     message: "✅ BACKEND TESTING COMPLETE: All backend APIs are working perfectly. Tested authentication (admin & CSM users), Tasks API (full CRUD), Data Labs Reports API, Activities API, Risks API, Opportunities API, and Customers API. All 17 test cases passed. Backend is ready for production use. Created comprehensive backend_test.py for future testing."
   - agent: "testing"
     message: "✅ FRONTEND TESTING COMPLETE: Comprehensive UI testing completed successfully. All 6 major flows tested and working: 1) Login Flow (admin credentials working), 2) Navigation (all sidebar links functional), 3) Task Creation (full CRUD working with proper form validation), 4) Data Labs Reports Creation (full functionality working), 5) Navigation Badges ('Soon' badges correctly displayed), 6) Logout (working correctly). Created test task and report entries successfully. No critical errors found. Frontend is production-ready."
+  - agent: "main"
+    message: "Added new features: 1) Edit buttons for Basic Info, Products, User & Ownership sections in customer detail page, 2) Health Change Modal that requires risk documentation when changing to non-healthy status, 3) Bulk Upload modal for CSV customer import, 4) Settings page with User Management, Organization, Notifications, Security, Data & Export tabs. Backend endpoints added: PUT /api/customers/{id}/health, POST /api/customers/bulk-upload"
