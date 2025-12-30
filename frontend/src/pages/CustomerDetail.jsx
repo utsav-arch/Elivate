@@ -69,6 +69,21 @@ export default function CustomerDetail() {
     loadCustomerData();
   };
 
+  const handleEditSuccess = () => {
+    setShowEditForm(false);
+    loadCustomerData();
+  };
+
+  const handleHealthChangeSuccess = () => {
+    setShowHealthModal(false);
+    loadCustomerData();
+  };
+
+  const openEditForm = (section) => {
+    setEditSection(section);
+    setShowEditForm(true);
+  };
+
   const getHealthBadgeClass = (status) => {
     switch (status) {
       case 'Healthy':
