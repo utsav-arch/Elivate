@@ -18,6 +18,7 @@ export default function CustomerList() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showForm, setShowForm] = useState(false);
+  const [showBulkUpload, setShowBulkUpload] = useState(false);
   const [filters, setFilters] = useState({
     healthStatus: 'all',
     onboardingStatus: 'all'
