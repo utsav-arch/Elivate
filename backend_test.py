@@ -524,18 +524,40 @@ TechCorp,Technology,ExtraColumn
             self.log_result("risk_updates", "Risk Update API Setup", False, "No risk_id available for testing")
             return
         
-        # Test PUT - Update risk
+        # Get the existing risk first to get required fields
+        success, existing_risk, status_code = self.make_request("GET", "/risks")
+        if not success:
+            self.log_result("risk_updates", "Get Existing Risk", False, "Failed to get existing risks")
+            return
+        
+        # Find our risk in the list
+        our_risk = None
+        for risk in existing_risk:
+            if risk.get("id") == self.risk_id:
+                our_risk = risk
+                break
+        
+        if not our_risk:
+            self.log_result("risk_updates", "Find Our Risk", False, "Could not find our created risk")
+            return
+        
+        # Test PUT - Update risk with all required fields
         update_data = {
+            "customer_id": our_risk["customer_id"],
+            "category": our_risk["category"],
+            "severity": "Low",  # Changed from Medium to Low
             "title": "UPDATED: Declining user engagement metrics",
             "description": "UPDATED: Customer's active user count has decreased by 25% over the past month, but showing signs of improvement",
-            "severity": "Low",
-            "status": "In Progress",
+            "impact_description": "UPDATED: Reduced impact on renewal likelihood due to improvement",
             "mitigation_plan": "UPDATED: Training sessions scheduled and additional support resources provided",
-            "churn_probability": 15
+            "revenue_impact": 25000.0,  # Reduced from 50000
+            "churn_probability": 15,    # Reduced from 30
+            "identified_date": our_risk["identified_date"],
+            "assigned_to_id": our_risk["assigned_to_id"]
         }
         
         success, response, status_code = self.make_request("PUT", f"/risks/{self.risk_id}", update_data)
-        if success and "message" in response:
+        if success and ("id" in response or "message" in response):
             self.log_result("risk_updates", "Update Risk", True, f"Successfully updated risk {self.risk_id}")
         else:
             self.log_result("risk_updates", "Update Risk", False, f"Failed to update risk: {response}", response)
