@@ -168,6 +168,30 @@ function App() {
             }
           />
           <Route
+            path="/reports"
+            element={
+              user ? (
+                <Layout user={user} onLogout={handleLogout}>
+                  <Reports />
+                </Layout>
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
+          <Route
+            path="/opportunities"
+            element={
+              user ? (
+                <Layout user={user} onLogout={handleLogout}>
+                  <OpportunityPipeline />
+                </Layout>
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
+          <Route
             path="*"
             element={
               user ? (
