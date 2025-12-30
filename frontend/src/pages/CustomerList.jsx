@@ -257,7 +257,7 @@ export default function CustomerList() {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-sm text-slate-800">
-                      ${(customer.arr || 0).toLocaleString()}
+                      {formatINR(customer.arr)}
                     </td>
                     <td className="px-6 py-4 text-sm text-slate-600">
                       {customer.plan_type || '-'}
