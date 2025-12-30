@@ -17,22 +17,26 @@ const RISK_CATEGORIES = {
   'Sentiment/Gut Feel Risks': ['Negative Feedback', 'Lack of Engagement', 'Dissatisfaction Signals']
 };
 
-export default function RiskForm({ customerId, customerName, onClose, onSuccess }) {
+const RISK_STATUSES = ['Open', 'In Progress', 'Resolved', 'Closed'];
+
+export default function RiskForm({ customerId, customerName, risk, onClose, onSuccess }) {
+  const isEditing = !!risk;
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState([]);
   const [formData, setFormData] = useState({
-    category: Object.keys(RISK_CATEGORIES)[0],
-    subcategory: RISK_CATEGORIES[Object.keys(RISK_CATEGORIES)[0]][0],
-    severity: 'Medium',
-    title: '',
-    description: '',
-    impact_description: '',
-    mitigation_plan: '',
-    revenue_impact: '',
-    churn_probability: '',
-    identified_date: new Date().toISOString().split('T')[0],
-    target_resolution_date: '',
-    assigned_to_id: ''
+    category: risk?.category || Object.keys(RISK_CATEGORIES)[0],
+    subcategory: risk?.subcategory || RISK_CATEGORIES[Object.keys(RISK_CATEGORIES)[0]][0],
+    severity: risk?.severity || 'Medium',
+    status: risk?.status || 'Open',
+    title: risk?.title || '',
+    description: risk?.description || '',
+    impact_description: risk?.impact_description || '',
+    mitigation_plan: risk?.mitigation_plan || '',
+    revenue_impact: risk?.revenue_impact || '',
+    churn_probability: risk?.churn_probability || '',
+    identified_date: risk?.identified_date || new Date().toISOString().split('T')[0],
+    target_resolution_date: risk?.target_resolution_date || '',
+    assigned_to_id: risk?.assigned_to_id || ''
   });
 
   useEffect(() => {
@@ -43,8 +47,9 @@ export default function RiskForm({ customerId, customerName, onClose, onSuccess 
     try {
       const response = await axios.get(`${API}/users`);
       setUsers(response.data);
-      if (response.data.length > 0) {
-        setFormData(prev => ({ ...prev, assigned_to_id: response.data[0].id }));
+      if (!isEditing && response.data.length > 0) {
+        const currentUser = JSON.parse(localStorage.getItem('user'));
+        setFormData(prev => ({ ...prev, assigned_to_id: currentUser?.id || response.data[0].id }));
       }
     } catch (error) {
       console.error('Error loading users:', error);
@@ -64,16 +69,23 @@ export default function RiskForm({ customerId, customerName, onClose, onSuccess 
     setLoading(true);
 
     try {
-      await axios.post(`${API}/risks`, {
+      const payload = {
         ...formData,
         customer_id: customerId,
         revenue_impact: formData.revenue_impact ? parseFloat(formData.revenue_impact) : null,
         churn_probability: formData.churn_probability ? parseInt(formData.churn_probability) : null
-      });
-      toast.success('Risk flagged successfully');
+      };
+
+      if (isEditing) {
+        await axios.put(`${API}/risks/${risk.id}`, payload);
+        toast.success('Risk updated successfully');
+      } else {
+        await axios.post(`${API}/risks`, payload);
+        toast.success('Risk flagged successfully');
+      }
       onSuccess();
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Failed to flag risk');
+      toast.error(error.response?.data?.detail || `Failed to ${isEditing ? 'update' : 'flag'} risk`);
     } finally {
       setLoading(false);
     }
@@ -83,7 +95,7 @@ export default function RiskForm({ customerId, customerName, onClose, onSuccess 
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Flag Risk - {customerName}</DialogTitle>
+          <DialogTitle>{isEditing ? 'Edit' : 'Flag'} Risk - {customerName}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -119,7 +131,7 @@ export default function RiskForm({ customerId, customerName, onClose, onSuccess 
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="severity">Severity *</Label>
               <select
@@ -134,6 +146,21 @@ export default function RiskForm({ customerId, customerName, onClose, onSuccess 
                 <option value="Medium">Medium</option>
                 <option value="High">High</option>
                 <option value="Critical">Critical</option>
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="status">Status *</Label>
+              <select
+                id="status"
+                className="w-full px-3 py-2 border border-slate-300 rounded-md"
+                value={formData.status}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                required
+              >
+                {RISK_STATUSES.map(st => (
+                  <option key={st} value={st}>{st}</option>
+                ))}
               </select>
             </div>
 
@@ -197,7 +224,7 @@ export default function RiskForm({ customerId, customerName, onClose, onSuccess 
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="revenue_impact">Revenue Impact ($)</Label>
+              <Label htmlFor="revenue_impact">Revenue Impact (₹)</Label>
               <Input
                 id="revenue_impact"
                 type="number"
@@ -258,7 +285,7 @@ export default function RiskForm({ customerId, customerName, onClose, onSuccess 
               className="bg-orange-600 hover:bg-orange-700"
               data-testid="risk-form-submit"
             >
-              {loading ? 'Flagging...' : 'Flag Risk'}
+              {loading ? (isEditing ? 'Updating...' : 'Flagging...') : (isEditing ? 'Update Risk' : 'Flag Risk')}
             </Button>
           </div>
         </form>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API } from '../App';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
@@ -14,17 +14,18 @@ const ACTIVITY_TYPES = [
   'Upsell/Cross-sell Discussion', 'Other'
 ];
 
-export default function ActivityForm({ customerId, customerName, onClose, onSuccess }) {
+export default function ActivityForm({ customerId, customerName, activity, onClose, onSuccess }) {
+  const isEditing = !!activity;
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    activity_type: 'Weekly Sync',
-    activity_date: new Date().toISOString().slice(0, 16),
-    title: '',
-    summary: '',
-    internal_notes: '',
-    sentiment: 'Neutral',
-    follow_up_required: false,
-    follow_up_date: ''
+    activity_type: activity?.activity_type || 'Weekly Sync',
+    activity_date: activity?.activity_date ? new Date(activity.activity_date).toISOString().slice(0, 16) : new Date().toISOString().slice(0, 16),
+    title: activity?.title || '',
+    summary: activity?.summary || '',
+    internal_notes: activity?.internal_notes || '',
+    sentiment: activity?.sentiment || 'Neutral',
+    follow_up_required: activity?.follow_up_required || false,
+    follow_up_date: activity?.follow_up_date || ''
   });
 
   const handleSubmit = async (e) => {
@@ -32,15 +33,22 @@ export default function ActivityForm({ customerId, customerName, onClose, onSucc
     setLoading(true);
 
     try {
-      await axios.post(`${API}/activities`, {
+      const payload = {
         ...formData,
         customer_id: customerId,
         activity_date: new Date(formData.activity_date).toISOString()
-      });
-      toast.success('Activity logged successfully');
+      };
+
+      if (isEditing) {
+        await axios.put(`${API}/activities/${activity.id}`, payload);
+        toast.success('Activity updated successfully');
+      } else {
+        await axios.post(`${API}/activities`, payload);
+        toast.success('Activity logged successfully');
+      }
       onSuccess();
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Failed to log activity');
+      toast.error(error.response?.data?.detail || `Failed to ${isEditing ? 'update' : 'log'} activity`);
     } finally {
       setLoading(false);
     }
@@ -50,7 +58,7 @@ export default function ActivityForm({ customerId, customerName, onClose, onSucc
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Log Activity - {customerName}</DialogTitle>
+          <DialogTitle>{isEditing ? 'Edit' : 'Log'} Activity - {customerName}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -166,7 +174,7 @@ export default function ActivityForm({ customerId, customerName, onClose, onSucc
               className="bg-blue-600 hover:bg-blue-700"
               data-testid="activity-form-submit"
             >
-              {loading ? 'Logging...' : 'Log Activity'}
+              {loading ? (isEditing ? 'Updating...' : 'Logging...') : (isEditing ? 'Update Activity' : 'Log Activity')}
             </Button>
           </div>
         </form>

@@ -10,18 +10,19 @@ import { toast } from 'sonner';
 const OPPORTUNITY_TYPES = ['Upsell', 'Cross-sell', 'Expansion', 'Renewal', 'New Product'];
 const STAGES = ['Identified', 'Qualified', 'Proposal', 'Negotiation', 'Closed Won', 'Closed Lost'];
 
-export default function OpportunityForm({ customerId, customerName, onClose, onSuccess }) {
+export default function OpportunityForm({ customerId, customerName, opportunity, onClose, onSuccess }) {
+  const isEditing = !!opportunity;
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState([]);
   const [formData, setFormData] = useState({
-    opportunity_type: 'Upsell',
-    title: '',
-    description: '',
-    value: '',
-    probability: 50,
-    stage: 'Identified',
-    expected_close_date: '',
-    owner_id: ''
+    opportunity_type: opportunity?.opportunity_type || 'Upsell',
+    title: opportunity?.title || '',
+    description: opportunity?.description || '',
+    value: opportunity?.value || '',
+    probability: opportunity?.probability || 50,
+    stage: opportunity?.stage || 'Identified',
+    expected_close_date: opportunity?.expected_close_date || '',
+    owner_id: opportunity?.owner_id || ''
   });
 
   useEffect(() => {
@@ -32,8 +33,9 @@ export default function OpportunityForm({ customerId, customerName, onClose, onS
     try {
       const response = await axios.get(`${API}/users`);
       setUsers(response.data);
-      if (response.data.length > 0) {
-        setFormData(prev => ({ ...prev, owner_id: response.data[0].id }));
+      if (!isEditing && response.data.length > 0) {
+        const currentUser = JSON.parse(localStorage.getItem('user'));
+        setFormData(prev => ({ ...prev, owner_id: currentUser?.id || response.data[0].id }));
       }
     } catch (error) {
       console.error('Error loading users:', error);
@@ -45,16 +47,23 @@ export default function OpportunityForm({ customerId, customerName, onClose, onS
     setLoading(true);
 
     try {
-      await axios.post(`${API}/opportunities`, {
+      const payload = {
         ...formData,
         customer_id: customerId,
         value: formData.value ? parseFloat(formData.value) : 0,
         probability: parseInt(formData.probability)
-      });
-      toast.success('Opportunity created successfully');
+      };
+
+      if (isEditing) {
+        await axios.put(`${API}/opportunities/${opportunity.id}`, payload);
+        toast.success('Opportunity updated successfully');
+      } else {
+        await axios.post(`${API}/opportunities`, payload);
+        toast.success('Opportunity created successfully');
+      }
       onSuccess();
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Failed to create opportunity');
+      toast.error(error.response?.data?.detail || `Failed to ${isEditing ? 'update' : 'create'} opportunity`);
     } finally {
       setLoading(false);
     }
@@ -64,7 +73,7 @@ export default function OpportunityForm({ customerId, customerName, onClose, onS
     <Dialog open={true} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Create Opportunity - {customerName}</DialogTitle>
+          <DialogTitle>{isEditing ? 'Edit' : 'Create'} Opportunity - {customerName}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -126,7 +135,7 @@ export default function OpportunityForm({ customerId, customerName, onClose, onS
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="value">Value ($)</Label>
+              <Label htmlFor="value">Value (₹)</Label>
               <Input
                 id="value"
                 type="number"
@@ -187,7 +196,7 @@ export default function OpportunityForm({ customerId, customerName, onClose, onS
               className="bg-green-600 hover:bg-green-700"
               data-testid="opportunity-form-submit"
             >
-              {loading ? 'Creating...' : 'Create Opportunity'}
+              {loading ? (isEditing ? 'Updating...' : 'Creating...') : (isEditing ? 'Update Opportunity' : 'Create Opportunity')}
             </Button>
           </div>
         </form>
