@@ -115,14 +115,25 @@ export default function CustomerList() {
           <h1 className="text-3xl font-bold text-slate-800 mb-2">Customers</h1>
           <p className="text-slate-600">{filteredCustomers.length} total customers</p>
         </div>
-        <Button
-          onClick={() => setShowForm(true)}
-          className="bg-blue-600 hover:bg-blue-700 flex items-center space-x-2"
-          data-testid="add-customer-button"
-        >
-          <Plus size={18} />
-          <span>Add Customer</span>
-        </Button>
+        <div className="flex items-center space-x-3">
+          <Button
+            variant="outline"
+            onClick={() => setShowBulkUpload(true)}
+            className="flex items-center space-x-2"
+            data-testid="bulk-upload-button"
+          >
+            <Upload size={18} />
+            <span>Bulk Upload</span>
+          </Button>
+          <Button
+            onClick={() => setShowForm(true)}
+            className="bg-blue-600 hover:bg-blue-700 flex items-center space-x-2"
+            data-testid="add-customer-button"
+          >
+            <Plus size={18} />
+            <span>Add Customer</span>
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}
