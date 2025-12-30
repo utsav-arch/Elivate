@@ -32,7 +32,7 @@ export default function CustomerList() {
   const [showBulkUpload, setShowBulkUpload] = useState(false);
   const [filters, setFilters] = useState({
     healthStatus: 'all',
-    onboardingStatus: 'all'
+    accountStatus: 'all'
   });
 
   useEffect(() => {
@@ -70,9 +70,9 @@ export default function CustomerList() {
       filtered = filtered.filter(c => c.health_status === filters.healthStatus);
     }
 
-    // Onboarding status filter
-    if (filters.onboardingStatus !== 'all') {
-      filtered = filtered.filter(c => c.onboarding_status === filters.onboardingStatus);
+    // Account status filter
+    if (filters.accountStatus !== 'all') {
+      filtered = filtered.filter(c => c.account_status === filters.accountStatus);
     }
 
     setFilteredCustomers(filtered);
