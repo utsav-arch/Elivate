@@ -32,7 +32,9 @@ class APITester:
             "customers": {"passed": 0, "failed": 0, "details": []},
             "activities": {"passed": 0, "failed": 0, "details": []},
             "risks": {"passed": 0, "failed": 0, "details": []},
-            "opportunities": {"passed": 0, "failed": 0, "details": []}
+            "opportunities": {"passed": 0, "failed": 0, "details": []},
+            "health_status": {"passed": 0, "failed": 0, "details": []},
+            "bulk_upload": {"passed": 0, "failed": 0, "details": []}
         }
 
     def log_result(self, category: str, test_name: str, success: bool, message: str, response_data: Any = None):
