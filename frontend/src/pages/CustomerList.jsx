@@ -176,21 +176,24 @@ export default function CustomerList() {
           <div>
             <select
               className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              value={filters.onboardingStatus}
-              onChange={(e) => setFilters({ ...filters, onboardingStatus: e.target.value })}
-              data-testid="filter-onboarding-status"
+              value={filters.accountStatus}
+              onChange={(e) => setFilters({ ...filters, accountStatus: e.target.value })}
+              data-testid="filter-account-status"
             >
-              <option value="all">All Onboarding Status</option>
-              <option value="Not Started">Not Started</option>
-              <option value="In Progress">In Progress</option>
-              <option value="Completed">Completed</option>
+              <option value="all">All Account Status</option>
+              <option value="POC/Pilot">POC/Pilot</option>
+              <option value="Onboarding">Onboarding</option>
+              <option value="UAT">UAT</option>
+              <option value="Live">Live</option>
+              <option value="Hold">Hold</option>
+              <option value="Churn">Churn</option>
             </select>
           </div>
           <Button
             variant="outline"
             onClick={() => {
               setSearchTerm('');
-              setFilters({ healthStatus: 'all', onboardingStatus: 'all' });
+              setFilters({ healthStatus: 'all', accountStatus: 'all' });
             }}
             className="flex items-center space-x-2"
           >
