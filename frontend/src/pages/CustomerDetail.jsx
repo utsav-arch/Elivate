@@ -44,6 +44,7 @@ export default function CustomerDetail() {
   const [showHealthModal, setShowHealthModal] = useState(false);
   const [showStakeholderForm, setShowStakeholderForm] = useState(false);
   const [showDocumentUpload, setShowDocumentUpload] = useState(false);
+  const [previewDocument, setPreviewDocument] = useState(null);
   
   // Edit states
   const [editSection, setEditSection] = useState('basic');
