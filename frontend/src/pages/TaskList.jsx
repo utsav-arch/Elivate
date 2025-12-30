@@ -4,7 +4,7 @@ import { API } from '../App';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
-import { Plus, Filter } from 'lucide-react';
+import { Plus, Filter, CheckCircle2, Clock, AlertCircle } from 'lucide-react';
 import TaskForm from '../components/TaskForm';
 import { toast } from 'sonner';
 
@@ -14,23 +14,29 @@ export default function TaskList() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
+  const [users, setUsers] = useState([]);
   const [filters, setFilters] = useState({
     status: 'all',
-    priority: 'all'
+    priority: 'all',
+    csm: 'all'
   });
 
   useEffect(() => {
-    loadTasks();
+    loadData();
   }, []);
 
   useEffect(() => {
     filterTasks();
   }, [tasks, filters]);
 
-  const loadTasks = async () => {
+  const loadData = async () => {
     try {
-      const response = await axios.get(`${API}/tasks`);
-      setTasks(response.data);
+      const [tasksRes, usersRes] = await Promise.all([
+        axios.get(`${API}/tasks`),
+        axios.get(`${API}/users`)
+      ]);
+      setTasks(tasksRes.data);
+      setUsers(usersRes.data.filter(u => u.role === 'CSM' || u.role === 'ADMIN'));
     } catch (error) {
       toast.error('Failed to load tasks');
     } finally {
@@ -47,6 +53,10 @@ export default function TaskList() {
 
     if (filters.priority !== 'all') {
       filtered = filtered.filter(t => t.priority === filters.priority);
+    }
+
+    if (filters.csm !== 'all') {
+      filtered = filtered.filter(t => t.assigned_to_id === filters.csm);
     }
 
     // Sort: overdue first, then by due date
@@ -67,7 +77,7 @@ export default function TaskList() {
   const handleTaskCreated = () => {
     setShowForm(false);
     setSelectedTask(null);
-    loadTasks();
+    loadData();
   };
 
   const handleEditTask = (task) => {
@@ -75,73 +85,66 @@ export default function TaskList() {
     setShowForm(true);
   };
 
-  const handleCompleteTask = async (taskId) => {
+  const handleToggleComplete = async (task) => {
     try {
-      const task = tasks.find(t => t.id === taskId);
-      await axios.put(`${API}/tasks/${taskId}`, {
-        ...task,
-        status: 'Completed'
-      });
-      toast.success('Task completed!');
-      loadTasks();
+      const newStatus = task.status === 'Completed' ? 'Pending' : 'Completed';
+      await axios.put(`${API}/tasks/${task.id}`, { status: newStatus });
+      toast.success(`Task marked as ${newStatus.toLowerCase()}`);
+      loadData();
     } catch (error) {
-      toast.error('Failed to complete task');
+      toast.error('Failed to update task');
     }
   };
 
-  const getPriorityClass = (priority) => {
-    switch (priority) {
-      case 'Critical':
-        return 'bg-red-100 text-red-700';
-      case 'High':
-        return 'bg-orange-100 text-orange-700';
-      case 'Medium':
-        return 'bg-yellow-100 text-yellow-700';
-      case 'Low':
-        return 'bg-blue-100 text-blue-700';
-      default:
-        return 'bg-gray-100 text-gray-700';
-    }
-  };
-
-  const getStatusClass = (status) => {
+  const getStatusBadgeClass = (status) => {
     switch (status) {
-      case 'Completed':
-        return 'bg-green-100 text-green-700';
-      case 'In Progress':
-        return 'bg-blue-100 text-blue-700';
-      case 'Blocked':
-        return 'bg-red-100 text-red-700';
-      default:
-        return 'bg-gray-100 text-gray-700';
+      case 'Completed': return 'bg-green-100 text-green-700';
+      case 'In Progress': return 'bg-blue-100 text-blue-700';
+      case 'Pending': return 'bg-yellow-100 text-yellow-700';
+      default: return 'bg-slate-100 text-slate-700';
+    }
+  };
+
+  const getPriorityBadgeClass = (priority) => {
+    switch (priority) {
+      case 'Critical': return 'bg-red-100 text-red-700';
+      case 'High': return 'bg-orange-100 text-orange-700';
+      case 'Medium': return 'bg-yellow-100 text-yellow-700';
+      case 'Low': return 'bg-green-100 text-green-700';
+      default: return 'bg-slate-100 text-slate-700';
     }
   };
 
   const isOverdue = (dueDate, status) => {
-    const today = new Date().toISOString().split('T')[0];
-    return dueDate < today && status !== 'Completed';
+    if (status === 'Completed') return false;
+    return new Date(dueDate) < new Date().setHours(0, 0, 0, 0);
   };
+
+  const today = new Date().toISOString().split('T')[0];
+  const overdueTasks = tasks.filter(t => isOverdue(t.due_date, t.status)).length;
+  const dueTodayTasks = tasks.filter(t => t.due_date === today && t.status !== 'Completed').length;
+  const upcomingTasks = tasks.filter(t => t.due_date > today && t.status !== 'Completed').length;
+  const completedTasks = tasks.filter(t => t.status === 'Completed').length;
 
   if (loading) {
     return <div className="flex items-center justify-center h-96"><div className="spinner"></div></div>;
   }
 
-  const overdueTasks = filteredTasks.filter(t => isOverdue(t.due_date, t.status));
-  const dueTodayTasks = filteredTasks.filter(t => t.due_date === new Date().toISOString().split('T')[0] && t.status !== 'Completed');
-  const upcomingTasks = filteredTasks.filter(t => t.due_date > new Date().toISOString().split('T')[0] && t.status !== 'Completed');
-  const completedTasks = filteredTasks.filter(t => t.status === 'Completed');
-
   return (
     <div className="px-6 py-8 space-y-6" data-testid="task-list-page">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-slate-800 mb-2">Tasks</h1>
-          <p className="text-slate-600">{filteredTasks.length} total tasks</p>
+          <p className="text-slate-600">{tasks.length} total tasks</p>
         </div>
         <Button
-          onClick={() => { setSelectedTask(null); setShowForm(true); }}
+          onClick={() => {
+            setSelectedTask(null);
+            setShowForm(true);
+          }}
           className="bg-blue-600 hover:bg-blue-700 flex items-center space-x-2"
-          data-testid="add-task-button"
+          data-testid="create-task-button"
         >
           <Plus size={18} />
           <span>Create Task</span>
@@ -151,212 +154,189 @@ export default function TaskList() {
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="p-4 bg-red-50 border-red-200">
-          <div className="text-2xl font-bold text-red-700">{overdueTasks.length}</div>
-          <div className="text-sm text-red-600">Overdue</div>
+          <div className="flex items-center space-x-3">
+            <AlertCircle className="text-red-600" size={24} />
+            <div>
+              <p className="text-2xl font-bold text-red-700">{overdueTasks}</p>
+              <p className="text-sm text-red-600">Overdue</p>
+            </div>
+          </div>
         </Card>
         <Card className="p-4 bg-orange-50 border-orange-200">
-          <div className="text-2xl font-bold text-orange-700">{dueTodayTasks.length}</div>
-          <div className="text-sm text-orange-600">Due Today</div>
+          <div className="flex items-center space-x-3">
+            <Clock className="text-orange-600" size={24} />
+            <div>
+              <p className="text-2xl font-bold text-orange-700">{dueTodayTasks}</p>
+              <p className="text-sm text-orange-600">Due Today</p>
+            </div>
+          </div>
         </Card>
         <Card className="p-4 bg-blue-50 border-blue-200">
-          <div className="text-2xl font-bold text-blue-700">{upcomingTasks.length}</div>
-          <div className="text-sm text-blue-600">Upcoming</div>
+          <div className="flex items-center space-x-3">
+            <Clock className="text-blue-600" size={24} />
+            <div>
+              <p className="text-2xl font-bold text-blue-700">{upcomingTasks}</p>
+              <p className="text-sm text-blue-600">Upcoming</p>
+            </div>
+          </div>
         </Card>
         <Card className="p-4 bg-green-50 border-green-200">
-          <div className="text-2xl font-bold text-green-700">{completedTasks.length}</div>
-          <div className="text-sm text-green-600">Completed</div>
+          <div className="flex items-center space-x-3">
+            <CheckCircle2 className="text-green-600" size={24} />
+            <div>
+              <p className="text-2xl font-bold text-green-700">{completedTasks}</p>
+              <p className="text-sm text-green-600">Completed</p>
+            </div>
+          </div>
         </Card>
       </div>
 
       {/* Filters */}
       <Card className="p-4 bg-white border-slate-200">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <select
-              className="w-full px-3 py-2 border border-slate-300 rounded-md"
-              value={filters.status}
-              onChange={(e) => setFilters({ ...filters, status: e.target.value })}
-              data-testid="filter-status"
-            >
-              <option value="all">All Status</option>
-              <option value="Not Started">Not Started</option>
-              <option value="In Progress">In Progress</option>
-              <option value="Blocked">Blocked</option>
-              <option value="Completed">Completed</option>
-            </select>
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center space-x-2">
+            <Filter size={18} className="text-slate-500" />
+            <span className="text-sm font-medium text-slate-700">Filters:</span>
           </div>
-          <div>
-            <select
-              className="w-full px-3 py-2 border border-slate-300 rounded-md"
-              value={filters.priority}
-              onChange={(e) => setFilters({ ...filters, priority: e.target.value })}
-              data-testid="filter-priority"
-            >
-              <option value="all">All Priority</option>
-              <option value="Critical">Critical</option>
-              <option value="High">High</option>
-              <option value="Medium">Medium</option>
-              <option value="Low">Low</option>
-            </select>
-          </div>
-          <Button
-            variant="outline"
-            onClick={() => setFilters({ status: 'all', priority: 'all' })}
-            className="flex items-center space-x-2"
+          
+          <select
+            className="px-3 py-2 border border-slate-300 rounded-md text-sm"
+            value={filters.status}
+            onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+            data-testid="filter-status"
           >
-            <Filter size={18} />
-            <span>Clear Filters</span>
-          </Button>
+            <option value="all">All Status</option>
+            <option value="Pending">Pending</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Completed">Completed</option>
+          </select>
+
+          <select
+            className="px-3 py-2 border border-slate-300 rounded-md text-sm"
+            value={filters.priority}
+            onChange={(e) => setFilters({ ...filters, priority: e.target.value })}
+            data-testid="filter-priority"
+          >
+            <option value="all">All Priority</option>
+            <option value="Critical">Critical</option>
+            <option value="High">High</option>
+            <option value="Medium">Medium</option>
+            <option value="Low">Low</option>
+          </select>
+
+          <select
+            className="px-3 py-2 border border-slate-300 rounded-md text-sm"
+            value={filters.csm}
+            onChange={(e) => setFilters({ ...filters, csm: e.target.value })}
+            data-testid="filter-csm"
+          >
+            <option value="all">All CSMs</option>
+            {users.map(user => (
+              <option key={user.id} value={user.id}>{user.name}</option>
+            ))}
+          </select>
+
+          {(filters.status !== 'all' || filters.priority !== 'all' || filters.csm !== 'all') && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setFilters({ status: 'all', priority: 'all', csm: 'all' })}
+            >
+              Clear Filters
+            </Button>
+          )}
         </div>
       </Card>
 
-      {/* Task Groups */}
-      <div className="space-y-6">
-        {overdueTasks.length > 0 && (
-          <div>
-            <h2 className="text-xl font-semibold text-red-700 mb-3">Overdue ({overdueTasks.length})</h2>
-            <div className="space-y-3">
-              {overdueTasks.map(task => (
-                <Card key={task.id} className="p-4 bg-red-50 border-red-200 hover:shadow-md transition-shadow">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <Badge className={getPriorityClass(task.priority)}>{task.priority}</Badge>
-                        <Badge className={getStatusClass(task.status)}>{task.status}</Badge>
-                        <span className="text-sm font-medium text-slate-800">{task.task_type}</span>
-                      </div>
-                      <h3 className="text-lg font-semibold text-slate-800 mb-1">{task.title}</h3>
-                      <p className="text-sm text-slate-600 mb-2">{task.customer_name}</p>
-                      {task.description && (
-                        <p className="text-sm text-slate-600 mb-2">{task.description}</p>
-                      )}
-                      <div className="flex items-center space-x-4 text-sm text-slate-500">
-                        <span>Due: {new Date(task.due_date).toLocaleDateString()}</span>
-                        <span>Assigned to: {task.assigned_to_name}</span>
-                      </div>
-                    </div>
-                    <div className="flex space-x-2">
-                      {task.status !== 'Completed' && (
-                        <Button
-                          size="sm"
-                          onClick={() => handleCompleteTask(task.id)}
-                          className="bg-green-600 hover:bg-green-700"
-                        >
-                          Complete
-                        </Button>
-                      )}
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleEditTask(task)}
+      {/* Task List */}
+      <Card className="bg-white border-slate-200">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-slate-50 border-b border-slate-200">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider w-12"></th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Task</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Customer</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Assigned To</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Due Date</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Priority</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-slate-100">
+              {filteredTasks.length === 0 ? (
+                <tr>
+                  <td colSpan="7" className="px-6 py-12 text-center text-slate-500">
+                    No tasks found
+                  </td>
+                </tr>
+              ) : (
+                filteredTasks.map((task) => (
+                  <tr
+                    key={task.id}
+                    className={`hover:bg-slate-50 transition-colors cursor-pointer ${
+                      isOverdue(task.due_date, task.status) ? 'bg-red-50' : ''
+                    }`}
+                    onClick={() => handleEditTask(task)}
+                  >
+                    <td className="px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={() => handleToggleComplete(task)}
+                        className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
+                          task.status === 'Completed'
+                            ? 'bg-green-500 border-green-500 text-white'
+                            : 'border-slate-300 hover:border-green-500'
+                        }`}
                       >
-                        Edit
-                      </Button>
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          </div>
-        )}
+                        {task.status === 'Completed' && <CheckCircle2 size={14} />}
+                      </button>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div>
+                        <p className={`font-medium ${task.status === 'Completed' ? 'line-through text-slate-400' : 'text-slate-800'}`}>
+                          {task.title}
+                        </p>
+                        <p className="text-xs text-slate-500">{task.task_type}</p>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-slate-600">
+                      {task.customer_name || '-'}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-slate-600">
+                      {task.assigned_to_name || '-'}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`text-sm ${isOverdue(task.due_date, task.status) ? 'text-red-600 font-medium' : 'text-slate-600'}`}>
+                        {new Date(task.due_date).toLocaleDateString('en-IN')}
+                        {isOverdue(task.due_date, task.status) && ' (Overdue)'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <Badge className={getPriorityBadgeClass(task.priority)}>
+                        {task.priority}
+                      </Badge>
+                    </td>
+                    <td className="px-6 py-4">
+                      <Badge className={getStatusBadgeClass(task.status)}>
+                        {task.status}
+                      </Badge>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </Card>
 
-        {dueTodayTasks.length > 0 && (
-          <div>
-            <h2 className="text-xl font-semibold text-orange-700 mb-3">Due Today ({dueTodayTasks.length})</h2>
-            <div className="space-y-3">
-              {dueTodayTasks.map(task => (
-                <Card key={task.id} className="p-4 bg-white border-slate-200 hover:shadow-md transition-shadow">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <Badge className={getPriorityClass(task.priority)}>{task.priority}</Badge>
-                        <Badge className={getStatusClass(task.status)}>{task.status}</Badge>
-                        <span className="text-sm font-medium text-slate-800">{task.task_type}</span>
-                      </div>
-                      <h3 className="text-lg font-semibold text-slate-800 mb-1">{task.title}</h3>
-                      <p className="text-sm text-slate-600 mb-2">{task.customer_name}</p>
-                      {task.description && (
-                        <p className="text-sm text-slate-600 mb-2">{task.description}</p>
-                      )}
-                      <div className="flex items-center space-x-4 text-sm text-slate-500">
-                        <span>Assigned to: {task.assigned_to_name}</span>
-                      </div>
-                    </div>
-                    <div className="flex space-x-2">
-                      {task.status !== 'Completed' && (
-                        <Button
-                          size="sm"
-                          onClick={() => handleCompleteTask(task.id)}
-                          className="bg-green-600 hover:bg-green-700"
-                        >
-                          Complete
-                        </Button>
-                      )}
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleEditTask(task)}
-                      >
-                        Edit
-                      </Button>
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {upcomingTasks.length > 0 && (
-          <div>
-            <h2 className="text-xl font-semibold text-blue-700 mb-3">Upcoming ({upcomingTasks.length})</h2>
-            <div className="space-y-3">
-              {upcomingTasks.slice(0, 10).map(task => (
-                <Card key={task.id} className="p-4 bg-white border-slate-200 hover:shadow-md transition-shadow">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <Badge className={getPriorityClass(task.priority)}>{task.priority}</Badge>
-                        <Badge className={getStatusClass(task.status)}>{task.status}</Badge>
-                        <span className="text-sm font-medium text-slate-800">{task.task_type}</span>
-                      </div>
-                      <h3 className="text-lg font-semibold text-slate-800 mb-1">{task.title}</h3>
-                      <p className="text-sm text-slate-600 mb-2">{task.customer_name}</p>
-                      <div className="flex items-center space-x-4 text-sm text-slate-500">
-                        <span>Due: {new Date(task.due_date).toLocaleDateString()}</span>
-                        <span>Assigned to: {task.assigned_to_name}</span>
-                      </div>
-                    </div>
-                    <div className="flex space-x-2">
-                      {task.status !== 'Completed' && (
-                        <Button
-                          size="sm"
-                          onClick={() => handleCompleteTask(task.id)}
-                          className="bg-green-600 hover:bg-green-700"
-                        >
-                          Complete
-                        </Button>
-                      )}
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleEditTask(task)}
-                      >
-                        Edit
-                      </Button>
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
+      {/* Task Form Modal */}
       {showForm && (
         <TaskForm
           task={selectedTask}
-          onClose={() => { setShowForm(false); setSelectedTask(null); }}
+          onClose={() => {
+            setShowForm(false);
+            setSelectedTask(null);
+          }}
           onSuccess={handleTaskCreated}
         />
       )}
