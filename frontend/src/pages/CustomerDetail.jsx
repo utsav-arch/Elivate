@@ -528,6 +528,23 @@ export default function CustomerDetail() {
           onSuccess={handleOpportunityAdded}
         />
       )}
+
+      {showEditForm && (
+        <CustomerEditForm
+          customer={customer}
+          editSection={editSection}
+          onClose={() => setShowEditForm(false)}
+          onSuccess={handleEditSuccess}
+        />
+      )}
+
+      {showHealthModal && (
+        <HealthChangeModal
+          customer={customer}
+          onClose={() => setShowHealthModal(false)}
+          onSuccess={handleHealthChangeSuccess}
+        />
+      )}
     </div>
   );
 }
