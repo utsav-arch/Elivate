@@ -330,7 +330,8 @@ class APITester:
         
         success, response, status_code = self.make_request("POST", "/risks", risk_data)
         if success and "id" in response:
-            self.log_result("risks", "Create Risk", True, f"Created risk with ID: {response['id']}")
+            self.risk_id = response["id"]
+            self.log_result("risks", "Create Risk", True, f"Created risk with ID: {self.risk_id}")
         else:
             self.log_result("risks", "Create Risk", False, f"Failed to create risk: {response}", response)
 
