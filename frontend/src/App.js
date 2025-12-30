@@ -8,6 +8,8 @@ import CustomerDetail from './pages/CustomerDetail';
 import TaskList from './pages/TaskList';
 import DataLabsReports from './pages/DataLabsReports';
 import Settings from './pages/Settings';
+import Reports from './pages/Reports';
+import OpportunityPipeline from './pages/OpportunityPipeline';
 import ComingSoon from './pages/ComingSoon';
 import Layout from './components/EnhancedLayout';
 import { Toaster } from './components/ui/sonner';
