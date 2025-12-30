@@ -129,7 +129,16 @@ export default function CustomerDetail() {
           </div>
         </div>
         <div className="flex items-center space-x-3">
-          <Badge className={`${getHealthBadgeClass(customer.health_status)} px-3 py-1.5 text-sm`}>
+          <Button
+            variant="outline"
+            onClick={() => setShowHealthModal(true)}
+            className="flex items-center space-x-2"
+            data-testid="change-health-button"
+          >
+            <Heart size={16} />
+            <span>Change Health</span>
+          </Button>
+          <Badge className={`${getHealthBadgeClass(customer.health_status)} px-3 py-1.5 text-sm cursor-pointer hover:opacity-80`} onClick={() => setShowHealthModal(true)}>
             Health: {Math.round(customer.health_score)}
           </Badge>
         </div>
