@@ -2,8 +2,19 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { API } from '../App';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Users, DollarSign, AlertTriangle, TrendingUp, Heart, Activity } from 'lucide-react';
+import { Users, IndianRupee, AlertTriangle, TrendingUp, Heart, Activity } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+
+// Format currency in INR
+const formatINR = (amount) => {
+  if (!amount) return '₹0';
+  if (amount >= 10000000) {
+    return `₹${(amount / 10000000).toFixed(1)}Cr`;
+  } else if (amount >= 100000) {
+    return `₹${(amount / 100000).toFixed(1)}L`;
+  }
+  return `₹${amount.toLocaleString('en-IN')}`;
+};
 
 const COLORS = {
   healthy: '#10b981',
