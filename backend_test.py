@@ -357,6 +357,129 @@ class APITester:
         else:
             self.log_result("opportunities", "Create Opportunity", False, f"Failed to create opportunity: {response}", response)
 
+    def test_health_status_api(self):
+        """Test Health Status Update API"""
+        print("\n=== Testing Health Status Update API ===")
+        
+        if not self.customer_id:
+            self.log_result("health_status", "Health Status API Setup", False, "No customer_id available for testing")
+            return
+        
+        # Get initial customer health status
+        success, response, status_code = self.make_request("GET", f"/customers/{self.customer_id}")
+        if success and "health_status" in response:
+            initial_health = response["health_status"]
+            initial_score = response.get("health_score", 0)
+            self.log_result("health_status", "Get Initial Health Status", True, f"Initial health: {initial_health} (score: {initial_score})")
+        else:
+            self.log_result("health_status", "Get Initial Health Status", False, f"Failed to get customer: {response}", response)
+            return
+        
+        # Test changing health status to "At Risk"
+        health_update_data = {"health_status": "At Risk"}
+        success, response, status_code = self.make_request("PUT", f"/customers/{self.customer_id}/health", health_update_data)
+        if success and "health_status" in response and response["health_status"] == "At Risk":
+            new_score = response.get("health_score", 0)
+            self.log_result("health_status", "Update to At Risk", True, f"Successfully updated to At Risk (score: {new_score})")
+        else:
+            self.log_result("health_status", "Update to At Risk", False, f"Failed to update health status: {response}", response)
+        
+        # Test changing health status to "Critical"
+        health_update_data = {"health_status": "Critical"}
+        success, response, status_code = self.make_request("PUT", f"/customers/{self.customer_id}/health", health_update_data)
+        if success and "health_status" in response and response["health_status"] == "Critical":
+            new_score = response.get("health_score", 0)
+            self.log_result("health_status", "Update to Critical", True, f"Successfully updated to Critical (score: {new_score})")
+        else:
+            self.log_result("health_status", "Update to Critical", False, f"Failed to update health status: {response}", response)
+        
+        # Test changing health status back to "Healthy"
+        health_update_data = {"health_status": "Healthy"}
+        success, response, status_code = self.make_request("PUT", f"/customers/{self.customer_id}/health", health_update_data)
+        if success and "health_status" in response and response["health_status"] == "Healthy":
+            new_score = response.get("health_score", 0)
+            self.log_result("health_status", "Update to Healthy", True, f"Successfully updated to Healthy (score: {new_score})")
+        else:
+            self.log_result("health_status", "Update to Healthy", False, f"Failed to update health status: {response}", response)
+        
+        # Verify the health status was actually updated in the database
+        success, response, status_code = self.make_request("GET", f"/customers/{self.customer_id}")
+        if success and "health_status" in response:
+            final_health = response["health_status"]
+            final_score = response.get("health_score", 0)
+            if final_health == "Healthy":
+                self.log_result("health_status", "Verify Final Health Status", True, f"Final health: {final_health} (score: {final_score})")
+            else:
+                self.log_result("health_status", "Verify Final Health Status", False, f"Expected Healthy, got {final_health}")
+        else:
+            self.log_result("health_status", "Verify Final Health Status", False, f"Failed to verify final health status: {response}", response)
+
+    def test_bulk_upload_api(self):
+        """Test Bulk Upload API"""
+        print("\n=== Testing Bulk Upload API ===")
+        
+        # Create a simple CSV content for testing
+        csv_content = """company_name,industry,region,plan_type,arr,renewal_date,csm_email
+TechCorp Solutions,Technology,North America,License,150000,2025-12-31,admin@convin.ai
+DataFlow Inc,Analytics,Europe,Hourly,75000,2025-06-30,admin@convin.ai
+CloudSync Ltd,Cloud Services,Asia Pacific,License,200000,2025-09-15,admin@convin.ai"""
+        
+        # Create a temporary file-like object
+        import io
+        csv_file = io.BytesIO(csv_content.encode('utf-8'))
+        
+        # Test bulk upload
+        files = {'file': ('test_customers.csv', csv_file, 'text/csv')}
+        success, response, status_code = self.make_request("POST", "/customers/bulk-upload", files=files)
+        
+        if success and "success_count" in response:
+            success_count = response["success_count"]
+            error_count = response["error_count"]
+            total_rows = response["total_rows"]
+            errors = response.get("errors", [])
+            
+            if success_count > 0:
+                self.log_result("bulk_upload", "Bulk Upload CSV", True, 
+                              f"Successfully uploaded {success_count}/{total_rows} customers (errors: {error_count})")
+                
+                # Log any errors for debugging
+                if errors:
+                    for error in errors:
+                        print(f"   Row {error.get('row', 'unknown')}: {error.get('error', 'unknown error')}")
+            else:
+                self.log_result("bulk_upload", "Bulk Upload CSV", False, 
+                              f"No customers uploaded. Errors: {errors}")
+        else:
+            self.log_result("bulk_upload", "Bulk Upload CSV", False, f"Failed to upload CSV: {response}", response)
+        
+        # Test with invalid file type
+        invalid_file = io.BytesIO(b"This is not a CSV file")
+        files = {'file': ('test.txt', invalid_file, 'text/plain')}
+        success, response, status_code = self.make_request("POST", "/customers/bulk-upload", files=files)
+        
+        if not success and status_code == 400:
+            self.log_result("bulk_upload", "Invalid File Type Rejection", True, "Correctly rejected non-CSV file")
+        else:
+            self.log_result("bulk_upload", "Invalid File Type Rejection", False, f"Should have rejected non-CSV file: {response}", response)
+        
+        # Test with malformed CSV
+        malformed_csv = """company_name,industry
+TechCorp,Technology,ExtraColumn
+,MissingName"""
+        
+        malformed_file = io.BytesIO(malformed_csv.encode('utf-8'))
+        files = {'file': ('malformed.csv', malformed_file, 'text/csv')}
+        success, response, status_code = self.make_request("POST", "/customers/bulk-upload", files=files)
+        
+        if success and "error_count" in response:
+            error_count = response["error_count"]
+            if error_count > 0:
+                self.log_result("bulk_upload", "Malformed CSV Handling", True, f"Correctly handled malformed CSV with {error_count} errors")
+            else:
+                self.log_result("bulk_upload", "Malformed CSV Handling", False, "Should have reported errors for malformed CSV")
+        else:
+            self.log_result("bulk_upload", "Malformed CSV Handling", False, f"Failed to process malformed CSV: {response}", response)
+
     def print_summary(self):
         """Print test summary"""
         print("\n" + "="*60)
