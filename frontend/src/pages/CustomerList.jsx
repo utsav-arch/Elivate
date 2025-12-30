@@ -277,6 +277,14 @@ export default function CustomerList() {
           onSuccess={handleCustomerCreated}
         />
       )}
+
+      {/* Bulk Upload Modal */}
+      {showBulkUpload && (
+        <BulkUploadModal
+          onClose={() => setShowBulkUpload(false)}
+          onSuccess={handleCustomerCreated}
+        />
+      )}
     </div>
   );
 }
