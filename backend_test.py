@@ -25,6 +25,11 @@ class APITester:
         self.customer_id = None
         self.task_id = None
         self.report_id = None
+        self.activity_id = None
+        self.risk_id = None
+        self.opportunity_id = None
+        self.stakeholder_id = None
+        self.document_id = None
         self.results = {
             "authentication": {"passed": 0, "failed": 0, "details": []},
             "tasks": {"passed": 0, "failed": 0, "details": []},
