@@ -69,6 +69,7 @@ export default function CustomerList() {
 
   const handleCustomerCreated = () => {
     setShowForm(false);
+    setShowBulkUpload(false);
     loadCustomers();
   };
 
