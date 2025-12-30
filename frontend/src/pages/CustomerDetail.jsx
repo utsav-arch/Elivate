@@ -101,6 +101,17 @@ export default function CustomerDetail() {
     loadCustomerData();
   };
 
+  const handleDeleteDocument = async (docId) => {
+    if (!window.confirm('Are you sure you want to delete this document?')) return;
+    try {
+      await axios.delete(`${API}/customers/${customerId}/documents/${docId}`);
+      toast.success('Document deleted');
+      loadCustomerData();
+    } catch (error) {
+      toast.error('Failed to delete document');
+    }
+  };
+
   const openEditForm = (section) => {
     setEditSection(section);
     setShowEditForm(true);
