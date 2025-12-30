@@ -25,6 +25,9 @@ export default function CustomerDetail() {
   const [showActivityForm, setShowActivityForm] = useState(false);
   const [showRiskForm, setShowRiskForm] = useState(false);
   const [showOpportunityForm, setShowOpportunityForm] = useState(false);
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [editSection, setEditSection] = useState('basic');
+  const [showHealthModal, setShowHealthModal] = useState(false);
 
   useEffect(() => {
     loadCustomerData();
