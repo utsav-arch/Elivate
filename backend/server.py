@@ -755,6 +755,18 @@ async def get_activities(customer_id: Optional[str] = None, current_user: Dict =
             activity['created_at'] = datetime.fromisoformat(activity['created_at'])
     return activities
 
+@api_router.put("/activities/{activity_id}")
+async def update_activity(activity_id: str, activity_data: dict, current_user: Dict = Depends(get_current_user)):
+    existing = await db.activities.find_one({"id": activity_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Activity not found")
+    
+    update_dict = {k: v for k, v in activity_data.items() if v is not None}
+    update_dict['updated_at'] = datetime.now(timezone.utc).isoformat()
+    
+    await db.activities.update_one({"id": activity_id}, {"$set": update_dict})
+    return {"message": "Activity updated successfully"}
+
 # Risk Routes
 @api_router.post("/risks", response_model=Risk)
 async def create_risk(risk_data: RiskCreate, current_user: Dict = Depends(get_current_user)):
