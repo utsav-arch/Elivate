@@ -28,12 +28,15 @@ export default function CustomerEditForm({ customer, onClose, onSuccess, editSec
     region: customer?.region || '',
     plan_type: customer?.plan_type || 'License',
     arr: customer?.arr || '',
+    one_time_setup_cost: customer?.one_time_setup_cost || '',
+    quarterly_consumption_cost: customer?.quarterly_consumption_cost || '',
     renewal_date: customer?.renewal_date || '',
     go_live_date: customer?.go_live_date || '',
     primary_objective: customer?.primary_objective || '',
     active_users: customer?.active_users || 0,
     total_licensed_users: customer?.total_licensed_users || 0,
     csm_owner_id: customer?.csm_owner_id || '',
+    am_owner_id: customer?.am_owner_id || '',
     onboarding_status: customer?.onboarding_status || 'Not Started',
     products_purchased: customer?.products_purchased || []
   });
@@ -59,6 +62,8 @@ export default function CustomerEditForm({ customer, onClose, onSuccess, editSec
       await axios.put(`${API}/customers/${customer.id}`, {
         ...formData,
         arr: formData.arr ? parseFloat(formData.arr) : null,
+        one_time_setup_cost: formData.one_time_setup_cost ? parseFloat(formData.one_time_setup_cost) : null,
+        quarterly_consumption_cost: formData.quarterly_consumption_cost ? parseFloat(formData.quarterly_consumption_cost) : null,
         active_users: parseInt(formData.active_users) || 0,
         total_licensed_users: parseInt(formData.total_licensed_users) || 0
       });
@@ -74,6 +79,7 @@ export default function CustomerEditForm({ customer, onClose, onSuccess, editSec
   const getTitle = () => {
     switch (editSection) {
       case 'basic': return 'Edit Basic Information';
+      case 'financial': return 'Edit Financial Information';
       case 'products': return 'Edit Products & Objective';
       case 'users': return 'Edit User & Ownership';
       default: return 'Edit Customer';
@@ -142,7 +148,7 @@ export default function CustomerEditForm({ customer, onClose, onSuccess, editSec
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="plan_type">Plan Type</Label>
                   <select
@@ -155,16 +161,6 @@ export default function CustomerEditForm({ customer, onClose, onSuccess, editSec
                       <option key={pt} value={pt}>{pt}</option>
                     ))}
                   </select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="arr">ARR ($)</Label>
-                  <Input
-                    id="arr"
-                    type="number"
-                    value={formData.arr}
-                    onChange={(e) => setFormData({ ...formData, arr: e.target.value })}
-                    placeholder="Annual Recurring Revenue"
-                  />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="onboarding_status">Onboarding Status</Label>
@@ -200,6 +196,51 @@ export default function CustomerEditForm({ customer, onClose, onSuccess, editSec
                     onChange={(e) => setFormData({ ...formData, go_live_date: e.target.value })}
                   />
                 </div>
+              </div>
+            </>
+          )}
+
+          {editSection === 'financial' && (
+            <>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="arr">Annual Recurring Revenue (₹)</Label>
+                  <Input
+                    id="arr"
+                    type="number"
+                    value={formData.arr}
+                    onChange={(e) => setFormData({ ...formData, arr: e.target.value })}
+                    placeholder="Enter ARR in INR"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="one_time_setup_cost">One-time Setup Cost (₹)</Label>
+                  <Input
+                    id="one_time_setup_cost"
+                    type="number"
+                    value={formData.one_time_setup_cost}
+                    onChange={(e) => setFormData({ ...formData, one_time_setup_cost: e.target.value })}
+                    placeholder="Enter setup cost"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="quarterly_consumption_cost">Quarterly Consumption Cost (₹)</Label>
+                <Input
+                  id="quarterly_consumption_cost"
+                  type="number"
+                  value={formData.quarterly_consumption_cost}
+                  onChange={(e) => setFormData({ ...formData, quarterly_consumption_cost: e.target.value })}
+                  placeholder="Enter quarterly consumption cost"
+                />
+              </div>
+
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <h4 className="font-medium text-blue-900 mb-2">Total Contract Value</h4>
+                <p className="text-2xl font-bold text-blue-700">
+                  ₹{((parseFloat(formData.arr) || 0) + (parseFloat(formData.one_time_setup_cost) || 0)).toLocaleString('en-IN')}
+                </p>
               </div>
             </>
           )}
@@ -242,19 +283,35 @@ export default function CustomerEditForm({ customer, onClose, onSuccess, editSec
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="csm_owner_id">CSM Owner</Label>
-                <select
-                  id="csm_owner_id"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-md"
-                  value={formData.csm_owner_id}
-                  onChange={(e) => setFormData({ ...formData, csm_owner_id: e.target.value })}
-                >
-                  <option value="">Select CSM</option>
-                  {users.filter(u => u.role === 'CSM' || u.role === 'ADMIN').map(user => (
-                    <option key={user.id} value={user.id}>{user.name}</option>
-                  ))}
-                </select>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="csm_owner_id">CSM Owner</Label>
+                  <select
+                    id="csm_owner_id"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-md"
+                    value={formData.csm_owner_id}
+                    onChange={(e) => setFormData({ ...formData, csm_owner_id: e.target.value })}
+                  >
+                    <option value="">Select CSM</option>
+                    {users.filter(u => u.role === 'CSM' || u.role === 'ADMIN').map(user => (
+                      <option key={user.id} value={user.id}>{user.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="am_owner_id">AM Owner</Label>
+                  <select
+                    id="am_owner_id"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-md"
+                    value={formData.am_owner_id}
+                    onChange={(e) => setFormData({ ...formData, am_owner_id: e.target.value })}
+                  >
+                    <option value="">Select AM</option>
+                    {users.filter(u => u.role === 'AM' || u.role === 'ADMIN').map(user => (
+                      <option key={user.id} value={user.id}>{user.name}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </>
           )}
