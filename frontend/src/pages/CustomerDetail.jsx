@@ -226,7 +226,19 @@ export default function CustomerDetail() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Basic Info */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-slate-800">Basic Information</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-slate-800">Basic Information</h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => openEditForm('basic')}
+                    className="text-blue-600 hover:text-blue-700"
+                    data-testid="edit-basic-info"
+                  >
+                    <Edit size={16} className="mr-1" />
+                    Edit
+                  </Button>
+                </div>
                 <div className="space-y-3">
                   <div>
                     <label className="text-sm text-slate-600">Industry</label>
@@ -247,7 +259,19 @@ export default function CustomerDetail() {
 
               {/* Products */}
               <div className="space-y-4">
-                <h3 className="text-lg font-semibold text-slate-800">Products Purchased</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-slate-800">Products Purchased</h3>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => openEditForm('products')}
+                    className="text-blue-600 hover:text-blue-700"
+                    data-testid="edit-products"
+                  >
+                    <Edit size={16} className="mr-1" />
+                    Edit
+                  </Button>
+                </div>
                 <div className="flex flex-wrap gap-2">
                   {customer.products_purchased && customer.products_purchased.length > 0 ? (
                     customer.products_purchased.map((product, idx) => (
@@ -267,8 +291,39 @@ export default function CustomerDetail() {
               </div>
             </div>
 
+            {/* User & Ownership Section */}
+            <div className="space-y-4 border-t pt-6">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-slate-800">User & Ownership</h3>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => openEditForm('users')}
+                  className="text-blue-600 hover:text-blue-700"
+                  data-testid="edit-users"
+                >
+                  <Edit size={16} className="mr-1" />
+                  Edit
+                </Button>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="text-sm text-slate-600">Active Users</label>
+                  <p className="text-sm font-medium text-slate-800">{customer.active_users} / {customer.total_licensed_users}</p>
+                </div>
+                <div>
+                  <label className="text-sm text-slate-600">CSM Owner</label>
+                  <p className="text-sm font-medium text-slate-800">{customer.csm_owner_name || '-'}</p>
+                </div>
+                <div>
+                  <label className="text-sm text-slate-600">Onboarding Status</label>
+                  <p className="text-sm font-medium text-slate-800">{customer.onboarding_status || '-'}</p>
+                </div>
+              </div>
+            </div>
+
             {/* Stakeholders */}
-            <div className="space-y-4">
+            <div className="space-y-4 border-t pt-6">
               <h3 className="text-lg font-semibold text-slate-800">Stakeholders</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {customer.stakeholders && customer.stakeholders.length > 0 ? (
