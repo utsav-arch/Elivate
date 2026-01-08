@@ -44,7 +44,9 @@ class APITester:
             "risk_updates": {"passed": 0, "failed": 0, "details": []},
             "opportunity_updates": {"passed": 0, "failed": 0, "details": []},
             "stakeholders": {"passed": 0, "failed": 0, "details": []},
-            "documents": {"passed": 0, "failed": 0, "details": []}
+            "documents": {"passed": 0, "failed": 0, "details": []},
+            "invoices": {"passed": 0, "failed": 0, "details": []},
+            "churn": {"passed": 0, "failed": 0, "details": []}
         }
 
     def log_result(self, category: str, test_name: str, success: bool, message: str, response_data: Any = None):
