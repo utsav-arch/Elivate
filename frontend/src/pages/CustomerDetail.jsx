@@ -865,6 +865,27 @@ export default function CustomerDetail() {
             />
           </TabsContent>
 
+          {/* Setup Details Tab */}
+          <TabsContent value="setup" className="p-6">
+            <CustomerSetupDetails
+              customerId={customerId}
+              customerName={customer.company_name}
+            />
+          </TabsContent>
+
+          {/* Product Usage Tab */}
+          <TabsContent value="usage" className="p-6">
+            <ProductUsageModule customerId={customerId} />
+          </TabsContent>
+
+          {/* Data Labs / Insights Tab */}
+          <TabsContent value="insights" className="p-6">
+            <DataLabsCustomerReports
+              customerId={customerId}
+              customerName={customer.company_name}
+            />
+          </TabsContent>
+
           {/* Account Settings Tab */}
           <TabsContent value="settings" className="p-6 space-y-6">
             <div className="space-y-6">
