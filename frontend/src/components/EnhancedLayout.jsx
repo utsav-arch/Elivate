@@ -160,8 +160,21 @@ export default function EnhancedLayout({ children, user, onLogout }) {
             <div className="text-sm text-slate-600">
               Welcome back, <span className="font-semibold text-slate-800">{user?.name}</span>
             </div>
-            <div className="text-xs text-slate-500">
-              Convin.ai CSM Platform
+            <div className="flex items-center space-x-2">
+              <Link to="/notifications">
+                <Button variant="ghost" size="sm" className="relative">
+                  <Bell size={18} />
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center">3</span>
+                </Button>
+              </Link>
+              <Link to="/help">
+                <Button variant="ghost" size="sm">
+                  <HelpCircle size={18} />
+                </Button>
+              </Link>
+              <span className="text-xs text-slate-500 ml-2">
+                Convin.ai CSM Platform
+              </span>
             </div>
           </div>
         </header>
