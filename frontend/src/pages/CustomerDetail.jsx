@@ -47,6 +47,7 @@ export default function CustomerDetail() {
   const [showStakeholderForm, setShowStakeholderForm] = useState(false);
   const [showDocumentUpload, setShowDocumentUpload] = useState(false);
   const [previewDocument, setPreviewDocument] = useState(null);
+  const [showAccountStatusModal, setShowAccountStatusModal] = useState(false);
   
   // Edit states
   const [editSection, setEditSection] = useState('basic');
