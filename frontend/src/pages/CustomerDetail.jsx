@@ -290,9 +290,13 @@ export default function CustomerDetail() {
       {/* Tabs */}
       <Card className="bg-white border-slate-200">
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="w-full justify-start border-b rounded-none h-auto p-0">
+          <TabsList className="w-full justify-start border-b rounded-none h-auto p-0 flex-wrap">
             <TabsTrigger value="overview" className="rounded-none" data-testid="tab-overview">
               Overview
+            </TabsTrigger>
+            <TabsTrigger value="invoices" className="rounded-none" data-testid="tab-invoices">
+              <IndianRupee size={14} className="mr-1" />
+              Invoice & Revenue
             </TabsTrigger>
             <TabsTrigger value="activities" className="rounded-none" data-testid="tab-activities">
               Activities ({activities.length})
@@ -305,6 +309,10 @@ export default function CustomerDetail() {
             </TabsTrigger>
             <TabsTrigger value="documents" className="rounded-none" data-testid="tab-documents">
               Documents ({documents.length})
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="rounded-none" data-testid="tab-settings">
+              <Settings size={14} className="mr-1" />
+              Account Settings
             </TabsTrigger>
           </TabsList>
 
