@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 from typing import Dict, Any, Optional
 
 # Configuration
-BASE_URL = "https://csm-elevate.preview.emergentagent.com/api"
+BASE_URL = "https://success-track-1.preview.emergentagent.com/api"
 ADMIN_EMAIL = "admin@convin.ai"
 ADMIN_PASSWORD = "admin123"
 CSM_EMAIL = "priya.sharma@convin.ai"
