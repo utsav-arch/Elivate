@@ -306,94 +306,109 @@ export default function CustomerDetail() {
           </TabsList>
 
           {/* Overview Tab */}
-          <TabsContent value="overview" className="p-6 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <TabsContent value="overview" className="p-4 space-y-4">
+            {/* Account Status Section - At top of Overview */}
+            <Card className="bg-slate-50 border-slate-200">
+              <CardContent className="p-3 flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <span className="text-sm text-slate-600">Account Status:</span>
+                  <Badge className={`px-2 py-1 ${
+                    customer.account_status === 'Live' ? 'bg-green-100 text-green-700' :
+                    customer.account_status === 'Churn' ? 'bg-red-100 text-red-700' :
+                    customer.account_status === 'Hold' ? 'bg-yellow-100 text-yellow-700' :
+                    customer.account_status === 'Onboarding' ? 'bg-blue-100 text-blue-700' :
+                    'bg-slate-100 text-slate-700'
+                  }`}>
+                    {customer.account_status || 'Live'}
+                  </Badge>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowAccountStatusModal(true)}
+                  disabled={customer.account_status === 'Churn'}
+                  className="h-7 text-xs"
+                >
+                  <Edit size={12} className="mr-1" /> Change Status
+                </Button>
+              </CardContent>
+            </Card>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Basic Info */}
-              <div className="space-y-4">
+              <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-slate-800">Basic Information</h3>
+                  <h3 className="text-sm font-semibold text-slate-800">Basic Information</h3>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => openEditForm('basic')}
-                    className="text-blue-600 hover:text-blue-700"
+                    className="text-blue-600 hover:text-blue-700 h-7"
                     data-testid="edit-basic-info"
                   >
-                    <Edit size={16} className="mr-1" />
-                    Edit
+                    <Edit size={14} className="mr-1" /> Edit
                   </Button>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3 text-sm">
                   <div>
-                    <label className="text-sm text-slate-600">Company Name</label>
-                    <p className="text-sm font-medium text-slate-800">{customer.company_name}</p>
+                    <label className="text-xs text-slate-500">Company</label>
+                    <p className="font-medium text-slate-800">{customer.company_name}</p>
                   </div>
                   <div>
-                    <label className="text-sm text-slate-600">Website</label>
-                    <p className="text-sm font-medium text-slate-800">{customer.website || '-'}</p>
+                    <label className="text-xs text-slate-500">Website</label>
+                    <p className="font-medium text-slate-800">{customer.website || '-'}</p>
                   </div>
                   <div>
-                    <label className="text-sm text-slate-600">Industry</label>
-                    <p className="text-sm font-medium text-slate-800">{customer.industry || '-'}</p>
+                    <label className="text-xs text-slate-500">Industry</label>
+                    <p className="font-medium text-slate-800">{customer.industry || '-'}</p>
                   </div>
                   <div>
-                    <label className="text-sm text-slate-600">Region</label>
-                    <p className="text-sm font-medium text-slate-800">{customer.region || '-'}</p>
+                    <label className="text-xs text-slate-500">Region</label>
+                    <p className="font-medium text-slate-800">{customer.region || '-'}</p>
                   </div>
                   <div>
-                    <label className="text-sm text-slate-600">Plan Type</label>
-                    <p className="text-sm font-medium text-slate-800">{customer.plan_type || '-'}</p>
+                    <label className="text-xs text-slate-500">Plan</label>
+                    <p className="font-medium text-slate-800">{customer.plan_type || '-'}</p>
                   </div>
                   <div>
-                    <label className="text-sm text-slate-600">Onboarding Status</label>
-                    <p className="text-sm font-medium text-slate-800">{customer.onboarding_status || '-'}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm text-slate-600">Go-Live Date</label>
-                    <p className="text-sm font-medium text-slate-800">
+                    <label className="text-xs text-slate-500">Go-Live</label>
+                    <p className="font-medium text-slate-800">
                       {customer.go_live_date ? new Date(customer.go_live_date).toLocaleDateString('en-IN') : '-'}
-                    </p>
-                  </div>
-                  <div>
-                    <label className="text-sm text-slate-600">Renewal Date</label>
-                    <p className="text-sm font-medium text-slate-800">
-                      {customer.renewal_date ? new Date(customer.renewal_date).toLocaleDateString('en-IN') : '-'}
                     </p>
                   </div>
                 </div>
               </div>
 
               {/* Financial Info */}
-              <div className="space-y-4">
+              <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-slate-800">Financial Information</h3>
+                  <h3 className="text-sm font-semibold text-slate-800">Financial</h3>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => openEditForm('financial')}
-                    className="text-blue-600 hover:text-blue-700"
+                    className="text-blue-600 hover:text-blue-700 h-7"
                     data-testid="edit-financial"
                   >
-                    <Edit size={16} className="mr-1" />
-                    Edit
+                    <Edit size={14} className="mr-1" /> Edit
                   </Button>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-3 text-sm">
                   <div>
-                    <label className="text-sm text-slate-600">Annual Recurring Revenue (ARR)</label>
-                    <p className="text-sm font-medium text-slate-800">{formatINR(customer.arr)}</p>
+                    <label className="text-xs text-slate-500">ARR</label>
+                    <p className="font-medium text-slate-800">{formatINR(customer.arr)}</p>
                   </div>
                   <div>
-                    <label className="text-sm text-slate-600">One-time Setup Cost</label>
-                    <p className="text-sm font-medium text-slate-800">{formatINR(customer.one_time_setup_cost)}</p>
+                    <label className="text-xs text-slate-500">Setup Cost</label>
+                    <p className="font-medium text-slate-800">{formatINR(customer.one_time_setup_cost)}</p>
                   </div>
                   <div>
-                    <label className="text-sm text-slate-600">Quarterly Consumption Cost</label>
-                    <p className="text-sm font-medium text-slate-800">{formatINR(customer.quarterly_consumption_cost)}</p>
+                    <label className="text-xs text-slate-500">Quarterly Cost</label>
+                    <p className="font-medium text-slate-800">{formatINR(customer.quarterly_consumption_cost)}</p>
                   </div>
                   <div>
-                    <label className="text-sm text-slate-600">Total Contract Value</label>
-                    <p className="text-sm font-medium text-slate-800">
+                    <label className="text-xs text-slate-500">Total Contract</label>
+                    <p className="font-medium text-slate-800">
                       {formatINR((customer.arr || 0) + (customer.one_time_setup_cost || 0))}
                     </p>
                   </div>
@@ -401,97 +416,80 @@ export default function CustomerDetail() {
               </div>
             </div>
 
-            {/* Products & Objective */}
-            <div className="space-y-4 border-t pt-6">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-slate-800">Products & Objective</h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => openEditForm('products')}
-                  className="text-blue-600 hover:text-blue-700"
-                  data-testid="edit-products"
-                >
-                  <Edit size={16} className="mr-1" />
-                  Edit
+            {/* Ownership Section */}
+            <div className="border-t pt-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-slate-800">Ownership & Users</h3>
+                <Button variant="ghost" size="sm" onClick={() => openEditForm('users')} className="text-blue-600 hover:text-blue-700 h-7">
+                  <Edit size={14} className="mr-1" /> Edit
                 </Button>
               </div>
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-4 gap-3 text-sm">
                 <div>
-                  <label className="text-sm text-slate-600">Products Purchased</label>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {customer.products_purchased && customer.products_purchased.length > 0 ? (
-                      customer.products_purchased.map((product, idx) => (
-                        <Badge key={idx} variant="secondary" className="bg-blue-100 text-blue-700">
-                          {product}
-                        </Badge>
-                      ))
-                    ) : (
-                      <p className="text-sm text-slate-500">No products listed</p>
-                    )}
-                  </div>
+                  <label className="text-xs text-slate-500">CSM Owner</label>
+                  <p className="font-medium text-slate-800">{customer.csm_owner_name || '-'}</p>
                 </div>
                 <div>
-                  <label className="text-sm text-slate-600">Primary Objective</label>
-                  <p className="text-sm font-medium text-slate-800 mt-1">{customer.primary_objective || '-'}</p>
+                  <label className="text-xs text-slate-500">AM Owner</label>
+                  <p className="font-medium text-slate-800">{customer.am_owner_name || '-'}</p>
+                </div>
+                <div>
+                  <label className="text-xs text-slate-500">Active Users</label>
+                  <p className="font-medium text-slate-800">{customer.active_users}</p>
+                </div>
+                <div>
+                  <label className="text-xs text-slate-500">Licensed Users</label>
+                  <p className="font-medium text-slate-800">{customer.total_licensed_users}</p>
                 </div>
               </div>
             </div>
 
-            {/* User & Ownership Section */}
-            <div className="space-y-4 border-t pt-6">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-slate-800">User & Ownership</h3>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => openEditForm('users')}
-                  className="text-blue-600 hover:text-blue-700"
-                  data-testid="edit-users"
-                >
-                  <Edit size={16} className="mr-1" />
-                  Edit
+            {/* Products */}
+            <div className="border-t pt-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-slate-800">Products</h3>
+                <Button variant="ghost" size="sm" onClick={() => openEditForm('products')} className="text-blue-600 hover:text-blue-700 h-7">
+                  <Edit size={14} className="mr-1" /> Edit
                 </Button>
               </div>
-              <div className="grid grid-cols-4 gap-4">
-                <div>
-                  <label className="text-sm text-slate-600">Active Users</label>
-                  <p className="text-sm font-medium text-slate-800">{customer.active_users}</p>
-                </div>
-                <div>
-                  <label className="text-sm text-slate-600">Licensed Users</label>
-                  <p className="text-sm font-medium text-slate-800">{customer.total_licensed_users}</p>
-                </div>
-                <div>
-                  <label className="text-sm text-slate-600">CSM Owner</label>
-                  <p className="text-sm font-medium text-slate-800">{customer.csm_owner_name || '-'}</p>
-                </div>
-                <div>
-                  <label className="text-sm text-slate-600">AM Owner</label>
-                  <p className="text-sm font-medium text-slate-800">{customer.am_owner_name || '-'}</p>
-                </div>
+              <div className="flex flex-wrap gap-2">
+                {customer.products_purchased && customer.products_purchased.length > 0 ? (
+                  customer.products_purchased.map((product, idx) => (
+                    <Badge key={idx} variant="secondary" className="bg-blue-100 text-blue-700 text-xs">
+                      {product}
+                    </Badge>
+                  ))
+                ) : (
+                  <p className="text-sm text-slate-500">No products listed</p>
+                )}
               </div>
+              {customer.primary_objective && (
+                <p className="text-sm text-slate-600 mt-2"><span className="font-medium">Objective:</span> {customer.primary_objective}</p>
+              )}
             </div>
 
             {/* Stakeholders */}
-            <div className="space-y-4 border-t pt-6">
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-slate-800">Stakeholders</h3>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setEditingStakeholder(null);
-                    setShowStakeholderForm(true);
-                  }}
-                  className="flex items-center space-x-1"
-                >
-                  <Plus size={14} />
-                  <span>Add Stakeholder</span>
+            <div className="border-t pt-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-slate-800">Stakeholders</h3>
+                <Button variant="outline" size="sm" onClick={() => { setEditingStakeholder(null); setShowStakeholderForm(true); }} className="h-7 text-xs">
+                  <Plus size={12} className="mr-1" /> Add
                 </Button>
               </div>
               {customer.stakeholders && customer.stakeholders.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
+                  {customer.stakeholders.map((stakeholder, idx) => (
+                    <div key={idx} className="p-2 bg-slate-50 rounded text-sm">
+                      <p className="font-medium">{stakeholder.name}</p>
+                      <p className="text-xs text-slate-500">{stakeholder.role} • {stakeholder.email}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-slate-500">No stakeholders added</p>
+              )}
+            </div>
+          </TabsContent>
                   {customer.stakeholders.map((stakeholder, idx) => (
                     <div key={idx} className="p-4 bg-slate-50 rounded-lg">
                       <div className="flex items-start justify-between">
