@@ -1341,6 +1341,46 @@ async def get_churn_reports(current_user: Dict = Depends(get_current_user)):
         "records": records
     }
 
+# Customer Setup & Configuration
+@api_router.get("/customers/{customer_id}/setup")
+async def get_customer_setup(customer_id: str, current_user: Dict = Depends(get_current_user)):
+    setup = await db.customer_setup.find_one({"customer_id": customer_id}, {"_id": 0})
+    if not setup:
+        # Return default setup if not found
+        customer = await db.customers.find_one({"id": customer_id}, {"_id": 0})
+        return {
+            "customer_id": customer_id,
+            "client_name": customer.get('company_name') if customer else '',
+            "domain_link": "",
+            "process_name": "",
+            "integration_done_by": "",
+            "onboarding_done_by": "",
+            "delivery_spoc": "",
+            "telephony_name": "",
+            "integration_type": "API",
+            "call_flow_type": "Inbound",
+            "audits_based_on": "Percentage",
+            "crm_integration": False,
+            "crm_name": "",
+            "languages_supported": ["English"],
+            "ai_features": {}
+        }
+    return setup
+
+@api_router.put("/customers/{customer_id}/setup")
+async def update_customer_setup(customer_id: str, setup_data: dict, current_user: Dict = Depends(get_current_user)):
+    setup_data['customer_id'] = customer_id
+    setup_data['updated_at'] = datetime.now(timezone.utc).isoformat()
+    
+    existing = await db.customer_setup.find_one({"customer_id": customer_id})
+    if existing:
+        await db.customer_setup.update_one({"customer_id": customer_id}, {"$set": setup_data})
+    else:
+        setup_data['created_at'] = datetime.now(timezone.utc).isoformat()
+        await db.customer_setup.insert_one(setup_data)
+    
+    return {"message": "Setup updated successfully"}
+
 # Dashboard Stats
 @api_router.get("/dashboard/stats")
 async def get_dashboard_stats(current_user: Dict = Depends(get_current_user)):
