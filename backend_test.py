@@ -956,6 +956,10 @@ TechCorp,Technology,ExtraColumn
         self.test_stakeholders_api()        # New feature - Stakeholder Management
         self.test_documents_api()           # New feature - Document Management
         
+        # Test newest features - Invoice and Churn
+        self.test_invoices_api()            # New feature - Invoice Management
+        self.test_churn_api()               # New feature - Churn Management
+        
         return self.print_summary()
 
 if __name__ == "__main__":
