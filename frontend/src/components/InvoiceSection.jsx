@@ -4,38 +4,32 @@ import { API } from '../App';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { Input } from './ui/input';
-import { Label } from './ui/label';
-import { IndianRupee, Download, Plus, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
+import { IndianRupee, Plus, Edit, Trash2, Download, AlertTriangle, Calendar, Check, X } from 'lucide-react';
 import { toast } from 'sonner';
 
-// Format currency in INR
 const formatINR = (amount) => {
   if (!amount) return '₹0';
-  if (amount >= 10000000) {
-    return `₹${(amount / 10000000).toFixed(2)}Cr`;
-  } else if (amount >= 100000) {
-    return `₹${(amount / 100000).toFixed(2)}L`;
-  }
+  if (amount >= 10000000) return `₹${(amount / 10000000).toFixed(1)}Cr`;
+  if (amount >= 100000) return `₹${(amount / 100000).toFixed(1)}L`;
   return `₹${amount.toLocaleString('en-IN')}`;
 };
-
-const INVOICE_STATUSES = ['Draft', 'Raised', 'Partially Paid', 'Paid', 'Overdue'];
 
 export default function InvoiceSection({ customerId, customerName, arr }) {
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
+  const [editingInvoice, setEditingInvoice] = useState(null);
   const [formData, setFormData] = useState({
     invoice_number: '',
     invoice_date: new Date().toISOString().split('T')[0],
     billing_period_start: '',
     billing_period_end: '',
     invoice_amount: '',
-    paid_amount: '0',
+    paid_amount: 0,
     due_date: '',
-    status: 'Draft'
+    status: 'Raised'
   });
 
   useEffect(() => {
@@ -47,8 +41,7 @@ export default function InvoiceSection({ customerId, customerName, arr }) {
       const response = await axios.get(`${API}/customers/${customerId}/invoices`);
       setInvoices(response.data);
     } catch (error) {
-      // If no invoices endpoint yet, use empty array
-      setInvoices([]);
+      console.error('Failed to load invoices');
     } finally {
       setLoading(false);
     }
@@ -57,227 +50,205 @@ export default function InvoiceSection({ customerId, customerName, arr }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post(`${API}/customers/${customerId}/invoices`, {
-        ...formData,
-        invoice_amount: parseFloat(formData.invoice_amount),
-        paid_amount: parseFloat(formData.paid_amount) || 0
-      });
-      toast.success('Invoice created successfully');
+      if (editingInvoice) {
+        await axios.put(`${API}/customers/${customerId}/invoices/${editingInvoice.id}`, formData);
+        toast.success('Invoice updated');
+      } else {
+        await axios.post(`${API}/customers/${customerId}/invoices`, formData);
+        toast.success('Invoice created');
+      }
       setShowForm(false);
-      setFormData({
-        invoice_number: '',
-        invoice_date: new Date().toISOString().split('T')[0],
-        billing_period_start: '',
-        billing_period_end: '',
-        invoice_amount: '',
-        paid_amount: '0',
-        due_date: '',
-        status: 'Draft'
-      });
+      setEditingInvoice(null);
+      resetForm();
       loadInvoices();
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Failed to create invoice');
+      toast.error('Failed to save invoice');
     }
+  };
+
+  const handleEdit = (invoice) => {
+    setEditingInvoice(invoice);
+    setFormData({
+      invoice_number: invoice.invoice_number,
+      invoice_date: invoice.invoice_date,
+      billing_period_start: invoice.billing_period_start || '',
+      billing_period_end: invoice.billing_period_end || '',
+      invoice_amount: invoice.invoice_amount,
+      paid_amount: invoice.paid_amount,
+      due_date: invoice.due_date,
+      status: invoice.status
+    });
+    setShowForm(true);
+  };
+
+  const handleDelete = async (invoiceId) => {
+    if (!window.confirm('Delete this invoice?')) return;
+    try {
+      await axios.delete(`${API}/customers/${customerId}/invoices/${invoiceId}`);
+      toast.success('Invoice deleted');
+      loadInvoices();
+    } catch (error) {
+      toast.error('Failed to delete');
+    }
+  };
+
+  const handleStatusChange = async (invoice, newStatus) => {
+    try {
+      await axios.put(`${API}/customers/${customerId}/invoices/${invoice.id}`, { status: newStatus });
+      toast.success(`Status changed to ${newStatus}`);
+      loadInvoices();
+    } catch (error) {
+      toast.error('Failed to update status');
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      invoice_number: '',
+      invoice_date: new Date().toISOString().split('T')[0],
+      billing_period_start: '',
+      billing_period_end: '',
+      invoice_amount: '',
+      paid_amount: 0,
+      due_date: '',
+      status: 'Raised'
+    });
   };
 
   // Calculate summary metrics
   const totalInvoiced = invoices.reduce((sum, inv) => sum + (inv.invoice_amount || 0), 0);
   const totalPaid = invoices.reduce((sum, inv) => sum + (inv.paid_amount || 0), 0);
-  const pendingReceivables = totalInvoiced - totalPaid;
-  const overdueAmount = invoices
-    .filter(inv => inv.status === 'Overdue' || (new Date(inv.due_date) < new Date() && inv.status !== 'Paid'))
-    .reduce((sum, inv) => sum + ((inv.invoice_amount || 0) - (inv.paid_amount || 0)), 0);
+  const pending = totalInvoiced - totalPaid;
+  const overdue = invoices.filter(inv => inv.status === 'Overdue' || (new Date(inv.due_date) < new Date() && inv.status !== 'Paid')).reduce((sum, inv) => sum + (inv.invoice_amount - inv.paid_amount), 0);
 
   // Overdue buckets
-  const getOverdueDays = (dueDate) => {
-    const today = new Date();
-    const due = new Date(dueDate);
-    const diffTime = today - due;
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  };
-
+  const today = new Date();
+  const getOverdueDays = (dueDate) => Math.ceil((today - new Date(dueDate)) / (1000 * 60 * 60 * 24));
   const overdueBuckets = {
-    '0-30': invoices.filter(inv => {
-      const days = getOverdueDays(inv.due_date);
-      return days > 0 && days <= 30 && inv.status !== 'Paid';
-    }).length,
-    '31-60': invoices.filter(inv => {
-      const days = getOverdueDays(inv.due_date);
-      return days > 30 && days <= 60 && inv.status !== 'Paid';
-    }).length,
-    '61-90': invoices.filter(inv => {
-      const days = getOverdueDays(inv.due_date);
-      return days > 60 && days <= 90 && inv.status !== 'Paid';
-    }).length,
-    '90+': invoices.filter(inv => {
-      const days = getOverdueDays(inv.due_date);
-      return days > 90 && inv.status !== 'Paid';
-    }).length
+    '0-30': invoices.filter(inv => { const days = getOverdueDays(inv.due_date); return days > 0 && days <= 30 && inv.status !== 'Paid'; }).length,
+    '31-60': invoices.filter(inv => { const days = getOverdueDays(inv.due_date); return days > 30 && days <= 60 && inv.status !== 'Paid'; }).length,
+    '61-90': invoices.filter(inv => { const days = getOverdueDays(inv.due_date); return days > 60 && days <= 90 && inv.status !== 'Paid'; }).length,
+    '90+': invoices.filter(inv => { const days = getOverdueDays(inv.due_date); return days > 90 && inv.status !== 'Paid'; }).length
   };
 
-  const getStatusBadgeClass = (status, dueDate) => {
-    if (status === 'Paid') return 'bg-green-100 text-green-700';
-    if (status === 'Partially Paid') return 'bg-blue-100 text-blue-700';
-    if (status === 'Overdue' || (new Date(dueDate) < new Date() && status !== 'Paid')) return 'bg-red-100 text-red-700';
-    if (status === 'Raised') return 'bg-orange-100 text-orange-700';
-    return 'bg-slate-100 text-slate-700';
-  };
+  if (loading) {
+    return <div className="animate-pulse bg-slate-100 h-48 rounded"></div>;
+  }
 
   return (
-    <div className="space-y-6">
-      {/* Revenue Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+    <div className="space-y-4">
+      {/* Summary Cards */}
+      <div className="grid grid-cols-5 gap-3">
         <Card className="bg-blue-50 border-blue-200">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-blue-700">Booked Revenue</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-800">{formatINR(arr)}</div>
-            <p className="text-xs text-blue-600">Total ARR</p>
+          <CardContent className="p-3">
+            <p className="text-xs text-blue-600">Booked Revenue</p>
+            <p className="text-lg font-bold text-blue-800">{formatINR(arr)}</p>
           </CardContent>
         </Card>
-
-        <Card className="bg-purple-50 border-purple-200">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-purple-700">Invoiced Amount</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-purple-800">{formatINR(totalInvoiced)}</div>
-            <p className="text-xs text-purple-600">{invoices.length} invoices raised</p>
+        <Card className="bg-slate-50">
+          <CardContent className="p-3">
+            <p className="text-xs text-slate-600">Invoiced</p>
+            <p className="text-lg font-bold text-slate-800">{formatINR(totalInvoiced)}</p>
           </CardContent>
         </Card>
-
         <Card className="bg-green-50 border-green-200">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-green-700">Realized Revenue</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-800">{formatINR(totalPaid)}</div>
-            <p className="text-xs text-green-600">Paid invoices</p>
+          <CardContent className="p-3">
+            <p className="text-xs text-green-600">Realized</p>
+            <p className="text-lg font-bold text-green-800">{formatINR(totalPaid)}</p>
           </CardContent>
         </Card>
-
-        <Card className="bg-orange-50 border-orange-200">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-orange-700">Pending Receivables</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-orange-800">{formatINR(pendingReceivables)}</div>
-            <p className="text-xs text-orange-600">Invoiced but unpaid</p>
+        <Card className="bg-yellow-50 border-yellow-200">
+          <CardContent className="p-3">
+            <p className="text-xs text-yellow-600">Pending</p>
+            <p className="text-lg font-bold text-yellow-800">{formatINR(pending)}</p>
           </CardContent>
         </Card>
-
-        <Card className={`${overdueAmount > 0 ? 'bg-red-50 border-red-200' : 'bg-slate-50 border-slate-200'}`}>
-          <CardHeader className="pb-2">
-            <CardTitle className={`text-sm ${overdueAmount > 0 ? 'text-red-700' : 'text-slate-700'}`}>Overdue Amount</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className={`text-2xl font-bold ${overdueAmount > 0 ? 'text-red-800' : 'text-slate-800'}`}>{formatINR(overdueAmount)}</div>
-            <p className={`text-xs ${overdueAmount > 0 ? 'text-red-600' : 'text-slate-600'}`}>Beyond due date</p>
+        <Card className={`${overdue > 0 ? 'bg-red-50 border-red-200' : 'bg-slate-50'}`}>
+          <CardContent className="p-3">
+            <p className={`text-xs ${overdue > 0 ? 'text-red-600' : 'text-slate-600'}`}>Overdue</p>
+            <p className={`text-lg font-bold ${overdue > 0 ? 'text-red-800' : 'text-slate-800'}`}>{formatINR(overdue)}</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Overdue Buckets */}
       {(overdueBuckets['0-30'] > 0 || overdueBuckets['31-60'] > 0 || overdueBuckets['61-90'] > 0 || overdueBuckets['90+'] > 0) && (
-        <Card className="bg-red-50 border-red-200">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-red-700 flex items-center space-x-2">
-              <AlertTriangle size={16} />
-              <span>Overdue Analysis</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-4 gap-4">
-              <div className="text-center p-2 bg-white rounded">
-                <div className="text-lg font-bold text-orange-600">{overdueBuckets['0-30']}</div>
-                <div className="text-xs text-slate-600">0-30 days</div>
-              </div>
-              <div className="text-center p-2 bg-white rounded">
-                <div className="text-lg font-bold text-orange-700">{overdueBuckets['31-60']}</div>
-                <div className="text-xs text-slate-600">31-60 days</div>
-              </div>
-              <div className="text-center p-2 bg-white rounded">
-                <div className="text-lg font-bold text-red-600">{overdueBuckets['61-90']}</div>
-                <div className="text-xs text-slate-600">61-90 days</div>
-              </div>
-              <div className="text-center p-2 bg-white rounded">
-                <div className="text-lg font-bold text-red-700">{overdueBuckets['90+']}</div>
-                <div className="text-xs text-slate-600">90+ days</div>
-              </div>
+        <Card className="bg-orange-50 border-orange-200">
+          <CardContent className="p-3">
+            <p className="text-xs font-medium text-orange-700 mb-2">Overdue Analysis</p>
+            <div className="flex space-x-3 text-xs">
+              <span className="px-2 py-1 bg-yellow-100 rounded">0-30d: {overdueBuckets['0-30']}</span>
+              <span className="px-2 py-1 bg-orange-100 rounded">31-60d: {overdueBuckets['31-60']}</span>
+              <span className="px-2 py-1 bg-red-100 rounded">61-90d: {overdueBuckets['61-90']}</span>
+              <span className="px-2 py-1 bg-red-200 rounded">90+d: {overdueBuckets['90+']}</span>
             </div>
           </CardContent>
         </Card>
       )}
 
       {/* Invoice Table */}
-      <Card className="bg-white">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Invoices</CardTitle>
-          <Button onClick={() => setShowForm(true)} className="bg-blue-600 hover:bg-blue-700">
-            <Plus size={16} className="mr-2" />
-            Raise Invoice
+      <Card>
+        <CardHeader className="p-3 pb-2 flex flex-row items-center justify-between">
+          <CardTitle className="text-sm font-medium">Invoices</CardTitle>
+          <Button size="sm" onClick={() => { resetForm(); setEditingInvoice(null); setShowForm(true); }} className="h-7 text-xs bg-blue-600 hover:bg-blue-700">
+            <Plus size={12} className="mr-1" /> Raise Invoice
           </Button>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-0">
           {invoices.length === 0 ? (
-            <div className="text-center py-8 text-slate-500">
-              <IndianRupee size={48} className="mx-auto mb-4 opacity-50" />
-              <p>No invoices raised yet</p>
-            </div>
+            <div className="p-8 text-center text-sm text-slate-500">No invoices yet</div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-slate-50 border-b">
+              <table className="w-full text-sm">
+                <thead className="bg-slate-50 border-y">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Invoice #</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Date</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Billing Period</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Amount</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Paid</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Balance</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Due Date</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Status</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Actions</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-slate-500">#</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-slate-500">Date</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-slate-500">Amount</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-slate-500">Paid</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-slate-500">Due</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-slate-500">Status</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-slate-500">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {invoices.map((invoice) => {
-                    const balance = (invoice.invoice_amount || 0) - (invoice.paid_amount || 0);
-                    const overdueDays = getOverdueDays(invoice.due_date);
-                    const isOverdue = overdueDays > 0 && invoice.status !== 'Paid';
-                    
+                  {invoices.map((inv) => {
+                    const isOverdue = new Date(inv.due_date) < today && inv.status !== 'Paid';
+                    const daysOverdue = isOverdue ? getOverdueDays(inv.due_date) : 0;
                     return (
-                      <tr key={invoice.id} className={`hover:bg-slate-50 ${isOverdue ? 'bg-red-50' : ''}`}>
-                        <td className="px-4 py-3 font-medium text-slate-800">{invoice.invoice_number}</td>
-                        <td className="px-4 py-3 text-sm text-slate-600">
-                          {new Date(invoice.invoice_date).toLocaleDateString('en-IN')}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-slate-600">
-                          {invoice.billing_period_start && invoice.billing_period_end ? (
-                            `${new Date(invoice.billing_period_start).toLocaleDateString('en-IN')} - ${new Date(invoice.billing_period_end).toLocaleDateString('en-IN')}`
-                          ) : '-'}
-                        </td>
-                        <td className="px-4 py-3 font-medium text-slate-800">{formatINR(invoice.invoice_amount)}</td>
-                        <td className="px-4 py-3 text-green-600">{formatINR(invoice.paid_amount)}</td>
-                        <td className="px-4 py-3 font-medium text-orange-600">{formatINR(balance)}</td>
-                        <td className="px-4 py-3 text-sm">
-                          <span className={isOverdue ? 'text-red-600 font-medium' : 'text-slate-600'}>
-                            {new Date(invoice.due_date).toLocaleDateString('en-IN')}
+                      <tr key={inv.id} className={isOverdue ? 'bg-red-50' : 'hover:bg-slate-50'}>
+                        <td className="px-3 py-2 font-medium">{inv.invoice_number}</td>
+                        <td className="px-3 py-2 text-slate-600">{new Date(inv.invoice_date).toLocaleDateString('en-IN')}</td>
+                        <td className="px-3 py-2 font-medium">{formatINR(inv.invoice_amount)}</td>
+                        <td className="px-3 py-2 text-green-600">{formatINR(inv.paid_amount)}</td>
+                        <td className="px-3 py-2">
+                          <span className={isOverdue ? 'text-red-600' : ''}>
+                            {new Date(inv.due_date).toLocaleDateString('en-IN')}
+                            {isOverdue && <span className="text-xs ml-1">({daysOverdue}d)</span>}
                           </span>
-                          {isOverdue && (
-                            <span className="block text-xs text-red-500">{overdueDays} days overdue</span>
-                          )}
                         </td>
-                        <td className="px-4 py-3">
-                          <Badge className={getStatusBadgeClass(invoice.status, invoice.due_date)}>
-                            {isOverdue && invoice.status !== 'Paid' ? 'Overdue' : invoice.status}
-                          </Badge>
+                        <td className="px-3 py-2">
+                          <select
+                            value={inv.status}
+                            onChange={(e) => handleStatusChange(inv, e.target.value)}
+                            className={`text-xs px-2 py-1 rounded border-0 ${inv.status === 'Paid' ? 'bg-green-100 text-green-700' : inv.status === 'Overdue' || isOverdue ? 'bg-red-100 text-red-700' : inv.status === 'Partially Paid' ? 'bg-yellow-100 text-yellow-700' : 'bg-blue-100 text-blue-700'}`}
+                          >
+                            <option value="Draft">Draft</option>
+                            <option value="Raised">Raised</option>
+                            <option value="Partially Paid">Partially Paid</option>
+                            <option value="Paid">Paid</option>
+                            <option value="Overdue">Overdue</option>
+                          </select>
                         </td>
-                        <td className="px-4 py-3">
-                          <Button variant="ghost" size="sm">
-                            <Download size={16} />
-                          </Button>
+                        <td className="px-3 py-2">
+                          <div className="flex space-x-1">
+                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => handleEdit(inv)}>
+                              <Edit size={12} />
+                            </Button>
+                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-red-600" onClick={() => handleDelete(inv.id)}>
+                              <Trash2 size={12} />
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -291,106 +262,47 @@ export default function InvoiceSection({ customerId, customerName, arr }) {
 
       {/* Invoice Form Modal */}
       {showForm && (
-        <Dialog open={true} onOpenChange={setShowForm}>
-          <DialogContent className="max-w-lg">
+        <Dialog open={true} onOpenChange={() => setShowForm(false)}>
+          <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Raise Invoice - {customerName}</DialogTitle>
+              <DialogTitle>{editingInvoice ? 'Edit Invoice' : 'Raise Invoice'}</DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Invoice Number *</Label>
-                  <Input
-                    value={formData.invoice_number}
-                    onChange={(e) => setFormData({ ...formData, invoice_number: e.target.value })}
-                    placeholder="INV-2025-001"
-                    required
-                  />
+            <form onSubmit={handleSubmit} className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-sm text-slate-600">Invoice #</label>
+                  <Input value={formData.invoice_number} onChange={(e) => setFormData({...formData, invoice_number: e.target.value})} required className="mt-1" />
                 </div>
-                <div className="space-y-2">
-                  <Label>Invoice Date *</Label>
-                  <Input
-                    type="date"
-                    value={formData.invoice_date}
-                    onChange={(e) => setFormData({ ...formData, invoice_date: e.target.value })}
-                    required
-                  />
+                <div>
+                  <label className="text-sm text-slate-600">Invoice Date</label>
+                  <Input type="date" value={formData.invoice_date} onChange={(e) => setFormData({...formData, invoice_date: e.target.value})} required className="mt-1" />
                 </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Billing Period Start</Label>
-                  <Input
-                    type="date"
-                    value={formData.billing_period_start}
-                    onChange={(e) => setFormData({ ...formData, billing_period_start: e.target.value })}
-                  />
+                <div>
+                  <label className="text-sm text-slate-600">Amount</label>
+                  <Input type="number" value={formData.invoice_amount} onChange={(e) => setFormData({...formData, invoice_amount: parseFloat(e.target.value)})} required className="mt-1" />
                 </div>
-                <div className="space-y-2">
-                  <Label>Billing Period End</Label>
-                  <Input
-                    type="date"
-                    value={formData.billing_period_end}
-                    onChange={(e) => setFormData({ ...formData, billing_period_end: e.target.value })}
-                  />
+                <div>
+                  <label className="text-sm text-slate-600">Due Date</label>
+                  <Input type="date" value={formData.due_date} onChange={(e) => setFormData({...formData, due_date: e.target.value})} required className="mt-1" />
                 </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Invoice Amount (₹) *</Label>
-                  <Input
-                    type="number"
-                    value={formData.invoice_amount}
-                    onChange={(e) => setFormData({ ...formData, invoice_amount: e.target.value })}
-                    placeholder="Enter amount"
-                    required
-                  />
+                <div>
+                  <label className="text-sm text-slate-600">Paid Amount</label>
+                  <Input type="number" value={formData.paid_amount} onChange={(e) => setFormData({...formData, paid_amount: parseFloat(e.target.value) || 0})} className="mt-1" />
                 </div>
-                <div className="space-y-2">
-                  <Label>Paid Amount (₹)</Label>
-                  <Input
-                    type="number"
-                    value={formData.paid_amount}
-                    onChange={(e) => setFormData({ ...formData, paid_amount: e.target.value })}
-                    placeholder="0"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Due Date *</Label>
-                  <Input
-                    type="date"
-                    value={formData.due_date}
-                    onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Status *</Label>
-                  <select
-                    className="w-full px-3 py-2 border border-slate-300 rounded-md"
-                    value={formData.status}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                    required
-                  >
-                    {INVOICE_STATUSES.map(s => (
-                      <option key={s} value={s}>{s}</option>
-                    ))}
+                <div>
+                  <label className="text-sm text-slate-600">Status</label>
+                  <select className="w-full mt-1 px-3 py-2 border rounded-md text-sm" value={formData.status} onChange={(e) => setFormData({...formData, status: e.target.value})}>
+                    <option value="Draft">Draft</option>
+                    <option value="Raised">Raised</option>
+                    <option value="Partially Paid">Partially Paid</option>
+                    <option value="Paid">Paid</option>
+                    <option value="Overdue">Overdue</option>
                   </select>
                 </div>
               </div>
-
-              <div className="flex justify-end space-x-3 pt-4 border-t">
-                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
-                  Raise Invoice
-                </Button>
+              <div className="flex justify-end space-x-2 pt-2">
+                <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
+                <Button type="submit" className="bg-blue-600 hover:bg-blue-700">{editingInvoice ? 'Update' : 'Create'}</Button>
               </div>
             </form>
           </DialogContent>
