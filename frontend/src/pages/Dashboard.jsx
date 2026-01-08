@@ -1,311 +1,406 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { API } from '../App';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Users, IndianRupee, AlertTriangle, TrendingUp, Heart, Activity } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import { Button } from '../components/ui/button';
+import { Badge } from '../components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
+import {
+  Users,
+  IndianRupee,
+  AlertTriangle,
+  TrendingUp,
+  CheckSquare,
+  Activity,
+  Calendar,
+  Building2,
+  Clock,
+  Heart,
+  RefreshCw,
+  ChevronRight,
+  Target,
+  BarChart3,
+  FileText,
+  Download
+} from 'lucide-react';
 
-// Format currency in INR
 const formatINR = (amount) => {
   if (!amount) return '₹0';
-  if (amount >= 10000000) {
-    return `₹${(amount / 10000000).toFixed(1)}Cr`;
-  } else if (amount >= 100000) {
-    return `₹${(amount / 100000).toFixed(1)}L`;
-  }
+  if (amount >= 10000000) return `₹${(amount / 10000000).toFixed(1)}Cr`;
+  if (amount >= 100000) return `₹${(amount / 100000).toFixed(1)}L`;
   return `₹${amount.toLocaleString('en-IN')}`;
-};
-
-const COLORS = {
-  healthy: '#10b981',
-  atRisk: '#f59e0b',
-  critical: '#ef4444'
 };
 
 export default function Dashboard() {
   const [stats, setStats] = useState(null);
   const [customers, setCustomers] = useState([]);
-  const [risks, setRisks] = useState([]);
-  const [activities, setActivities] = useState([]);
   const [tasks, setTasks] = useState([]);
+  const [activities, setActivities] = useState([]);
+  const [opportunities, setOpportunities] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeView, setActiveView] = useState('overview');
 
   useEffect(() => {
-    loadDashboardData();
+    loadData();
   }, []);
 
-  const loadDashboardData = async () => {
+  const loadData = async () => {
     try {
-      const userData = JSON.parse(localStorage.getItem('user'));
-      const [statsRes, customersRes, risksRes, activitiesRes, tasksRes] = await Promise.all([
+      const [statsRes, customersRes, tasksRes, activitiesRes, oppsRes] = await Promise.all([
         axios.get(`${API}/dashboard/stats`),
         axios.get(`${API}/customers`),
-        axios.get(`${API}/risks`),
+        axios.get(`${API}/tasks`),
         axios.get(`${API}/activities`),
-        axios.get(`${API}/tasks?assigned_to_id=${userData.id}`)
+        axios.get(`${API}/opportunities`)
       ]);
-
       setStats(statsRes.data);
       setCustomers(customersRes.data);
-      setRisks(risksRes.data.filter(r => r.status === 'Open').slice(0, 5));
-      setActivities(activitiesRes.data.slice(0, 10));
-      setTasks(tasksRes.data.filter(t => t.status !== 'Completed').slice(0, 5));
+      setTasks(tasksRes.data);
+      setActivities(activitiesRes.data);
+      setOpportunities(oppsRes.data);
     } catch (error) {
-      console.error('Error loading dashboard:', error);
+      console.error('Failed to load dashboard data');
     } finally {
       setLoading(false);
     }
   };
 
+  const myTasks = tasks.filter(t => t.status !== 'Completed').slice(0, 5);
+  const overdueTasks = tasks.filter(t => t.status !== 'Completed' && new Date(t.due_date) < new Date());
+  const atRiskCustomers = customers.filter(c => c.health_status !== 'Healthy');
+  const upcomingRenewals = customers.filter(c => {
+    if (!c.renewal_date) return false;
+    const days = Math.ceil((new Date(c.renewal_date) - new Date()) / (1000 * 60 * 60 * 24));
+    return days > 0 && days <= 90;
+  });
+  const recentActivities = activities.slice(0, 5);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="spinner"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
-  const healthData = [
-    { name: 'Healthy', value: stats?.healthy_customers || 0, color: COLORS.healthy },
-    { name: 'At Risk', value: stats?.at_risk_customers || 0, color: COLORS.atRisk },
-    { name: 'Critical', value: stats?.critical_customers || 0, color: COLORS.critical }
-  ];
-
-  const topCustomersByARR = [...customers]
-    .sort((a, b) => (b.arr || 0) - (a.arr || 0))
-    .slice(0, 5)
-    .map(c => ({
-      name: c.company_name.length > 20 ? c.company_name.substring(0, 20) + '...' : c.company_name,
-      arr: c.arr || 0
-    }));
-
   return (
-    <div className="px-6 py-8 space-y-8" data-testid="dashboard-page">
+    <div className="p-4 space-y-4">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-slate-800 mb-2">Dashboard</h1>
-        <p className="text-slate-600">Overview of your customer success metrics</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-bold text-slate-800">Dashboard</h1>
+          <p className="text-sm text-slate-500">Customer Success Overview</p>
+        </div>
+        <div className="flex space-x-2">
+          <Button variant="outline" size="sm" onClick={loadData}>
+            <RefreshCw size={14} className="mr-1" /> Refresh
+          </Button>
+        </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="bg-white border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">Total Customers</CardTitle>
-            <Users className="h-5 w-5 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-slate-800" data-testid="total-customers-stat">
-              {stats?.total_customers || 0}
-            </div>
-            <p className="text-xs text-slate-500 mt-1">Active accounts</p>
-          </CardContent>
-        </Card>
+      {/* Role-based Tabs */}
+      <Tabs value={activeView} onValueChange={setActiveView} className="w-full">
+        <TabsList className="h-9">
+          <TabsTrigger value="overview" className="text-sm">Overview</TabsTrigger>
+          <TabsTrigger value="my-work" className="text-sm">My Work</TabsTrigger>
+          <TabsTrigger value="health" className="text-sm">Account Health</TabsTrigger>
+          <TabsTrigger value="billing" className="text-sm">Billing Health</TabsTrigger>
+        </TabsList>
 
-        <Card className="bg-white border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">Total ARR</CardTitle>
-            <IndianRupee className="h-5 w-5 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-slate-800" data-testid="total-arr-stat">
-              {formatINR(stats?.total_arr || 0)}
-            </div>
-            <p className="text-xs text-slate-500 mt-1">Annual recurring revenue</p>
-          </CardContent>
-        </Card>
+        {/* Overview Tab */}
+        <TabsContent value="overview" className="space-y-4 mt-4">
+          {/* Key Metrics */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <Card className="bg-white">
+              <CardContent className="p-3">
+                <div className="flex items-center justify-between">
+                  <Users className="text-blue-600" size={18} />
+                  <span className="text-xs text-slate-500">Customers</span>
+                </div>
+                <p className="text-2xl font-bold text-slate-800 mt-1">{stats?.total_customers || 0}</p>
+              </CardContent>
+            </Card>
 
-        <Card className="bg-white border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">Open Risks</CardTitle>
-            <AlertTriangle className="h-5 w-5 text-orange-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-slate-800" data-testid="open-risks-stat">
-              {stats?.open_risks || 0}
-            </div>
-            <p className="text-xs text-slate-500 mt-1">
-              {stats?.critical_risks || 0} critical
-            </p>
-          </CardContent>
-        </Card>
+            <Card className="bg-white">
+              <CardContent className="p-3">
+                <div className="flex items-center justify-between">
+                  <IndianRupee className="text-green-600" size={18} />
+                  <span className="text-xs text-slate-500">Total ARR</span>
+                </div>
+                <p className="text-2xl font-bold text-slate-800 mt-1">{formatINR(stats?.total_arr)}</p>
+              </CardContent>
+            </Card>
 
-        <Card className="bg-white border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">Pipeline Value</CardTitle>
-            <TrendingUp className="h-5 w-5 text-purple-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-slate-800" data-testid="pipeline-value-stat">
-              {formatINR(stats?.pipeline_value || 0)}
-            </div>
-            <p className="text-xs text-slate-500 mt-1">
-              {stats?.active_opportunities || 0} opportunities
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+            <Card className="bg-white">
+              <CardContent className="p-3">
+                <div className="flex items-center justify-between">
+                  <Heart className="text-emerald-600" size={18} />
+                  <span className="text-xs text-slate-500">Healthy</span>
+                </div>
+                <p className="text-2xl font-bold text-emerald-600 mt-1">{stats?.healthy_customers || 0}</p>
+              </CardContent>
+            </Card>
 
-      {/* Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Health Distribution */}
-        <Card className="bg-white border-slate-200 shadow-sm">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Heart className="h-5 w-5 text-blue-600" />
-              <span>Customer Health Distribution</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={healthData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={(entry) => `${entry.name}: ${entry.value}`}
-                  outerRadius={100}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {healthData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
+            <Card className="bg-white">
+              <CardContent className="p-3">
+                <div className="flex items-center justify-between">
+                  <AlertTriangle className="text-orange-600" size={18} />
+                  <span className="text-xs text-slate-500">At Risk</span>
+                </div>
+                <p className="text-2xl font-bold text-orange-600 mt-1">{(stats?.at_risk_customers || 0) + (stats?.critical_customers || 0)}</p>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-white">
+              <CardContent className="p-3">
+                <div className="flex items-center justify-between">
+                  <TrendingUp className="text-purple-600" size={18} />
+                  <span className="text-xs text-slate-500">Pipeline</span>
+                </div>
+                <p className="text-2xl font-bold text-slate-800 mt-1">{formatINR(stats?.pipeline_value)}</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* At Risk Accounts */}
+            <Card>
+              <CardHeader className="p-3 pb-2">
+                <CardTitle className="text-sm font-medium flex items-center justify-between">
+                  <span className="flex items-center"><AlertTriangle size={14} className="mr-1 text-orange-600" /> At Risk Accounts</span>
+                  <Link to="/customers?filter=at-risk" className="text-xs text-blue-600">View all</Link>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-3 pt-0">
+                <div className="space-y-2">
+                  {atRiskCustomers.slice(0, 4).map(customer => (
+                    <Link key={customer.id} to={`/customers/${customer.id}`} className="flex items-center justify-between p-2 hover:bg-slate-50 rounded text-sm">
+                      <div className="flex items-center space-x-2">
+                        <div className={`w-2 h-2 rounded-full ${customer.health_status === 'Critical' ? 'bg-red-500' : 'bg-yellow-500'}`} />
+                        <span className="font-medium text-slate-700 truncate max-w-[120px]">{customer.company_name}</span>
+                      </div>
+                      <span className="text-xs text-slate-500">{formatINR(customer.arr)}</span>
+                    </Link>
                   ))}
-                </Pie>
-                <Tooltip />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+                  {atRiskCustomers.length === 0 && <p className="text-xs text-slate-500 text-center py-2">No at-risk accounts</p>}
+                </div>
+              </CardContent>
+            </Card>
 
-        {/* Top Customers by ARR */}
-        <Card className="bg-white border-slate-200 shadow-sm">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <IndianRupee className="h-5 w-5 text-blue-600" />
-              <span>Top Customers by ARR</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={topCustomersByARR}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} />
-                <Tooltip 
-                  formatter={(value) => formatINR(value)}
-                  contentStyle={{ backgroundColor: 'white', border: '1px solid #e2e8f0', borderRadius: '8px' }}
-                />
-                <Bar dataKey="arr" fill="#3b82f6" radius={[8, 8, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
+            {/* Upcoming Renewals */}
+            <Card>
+              <CardHeader className="p-3 pb-2">
+                <CardTitle className="text-sm font-medium flex items-center justify-between">
+                  <span className="flex items-center"><RefreshCw size={14} className="mr-1 text-blue-600" /> Upcoming Renewals</span>
+                  <Badge variant="outline" className="text-xs">{upcomingRenewals.length}</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-3 pt-0">
+                <div className="space-y-2">
+                  {upcomingRenewals.slice(0, 4).map(customer => {
+                    const days = Math.ceil((new Date(customer.renewal_date) - new Date()) / (1000 * 60 * 60 * 24));
+                    return (
+                      <Link key={customer.id} to={`/customers/${customer.id}`} className="flex items-center justify-between p-2 hover:bg-slate-50 rounded text-sm">
+                        <span className="font-medium text-slate-700 truncate max-w-[120px]">{customer.company_name}</span>
+                        <Badge variant="outline" className={`text-xs ${days <= 30 ? 'border-red-300 text-red-600' : ''}`}>{days}d</Badge>
+                      </Link>
+                    );
+                  })}
+                  {upcomingRenewals.length === 0 && <p className="text-xs text-slate-500 text-center py-2">No renewals in 90 days</p>}
+                </div>
+              </CardContent>
+            </Card>
 
-      {/* Activity, Risks & Tasks Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recent Activities */}
-        <Card className="bg-white border-slate-200 shadow-sm">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <Activity className="h-5 w-5 text-blue-600" />
-              <span>Recent Activities</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {activities.length === 0 ? (
-                <p className="text-sm text-slate-500 text-center py-8">No activities logged yet</p>
-              ) : (
-                activities.map((activity) => (
-                  <div key={activity.id} className="flex items-start space-x-3 pb-3 border-b border-slate-100 last:border-0">
-                    <div className="w-2 h-2 rounded-full bg-blue-600 mt-2"></div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-800 truncate">{activity.title}</p>
-                      <p className="text-xs text-slate-500 mt-1">
-                        {activity.customer_name} • {new Date(activity.activity_date).toLocaleDateString()}
-                      </p>
+            {/* Recent Activities */}
+            <Card>
+              <CardHeader className="p-3 pb-2">
+                <CardTitle className="text-sm font-medium flex items-center">
+                  <Activity size={14} className="mr-1 text-green-600" /> Recent Activities
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-3 pt-0">
+                <div className="space-y-2">
+                  {recentActivities.map(activity => (
+                    <div key={activity.id} className="p-2 hover:bg-slate-50 rounded text-sm">
+                      <p className="font-medium text-slate-700 truncate">{activity.title}</p>
+                      <p className="text-xs text-slate-500">{activity.customer_name}</p>
                     </div>
+                  ))}
+                  {recentActivities.length === 0 && <p className="text-xs text-slate-500 text-center py-2">No recent activities</p>}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* My Work Tab */}
+        <TabsContent value="my-work" className="space-y-4 mt-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* My Tasks */}
+            <Card>
+              <CardHeader className="p-3 pb-2">
+                <CardTitle className="text-sm font-medium flex items-center justify-between">
+                  <span className="flex items-center"><CheckSquare size={14} className="mr-1" /> My Tasks</span>
+                  <Link to="/tasks"><Button variant="ghost" size="sm" className="h-6 text-xs">View all <ChevronRight size={12} /></Button></Link>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-3 pt-0">
+                <div className="space-y-2">
+                  {myTasks.map(task => (
+                    <div key={task.id} className="flex items-center justify-between p-2 bg-slate-50 rounded text-sm">
+                      <div>
+                        <p className="font-medium text-slate-700">{task.title}</p>
+                        <p className="text-xs text-slate-500">{task.customer_name}</p>
+                      </div>
+                      <Badge variant="outline" className={`text-xs ${new Date(task.due_date) < new Date() ? 'border-red-300 text-red-600' : ''}`}>
+                        {new Date(task.due_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                      </Badge>
+                    </div>
+                  ))}
+                  {myTasks.length === 0 && <p className="text-xs text-slate-500 text-center py-4">No pending tasks</p>}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Quick Stats */}
+            <Card>
+              <CardHeader className="p-3 pb-2">
+                <CardTitle className="text-sm font-medium">Quick Stats</CardTitle>
+              </CardHeader>
+              <CardContent className="p-3 pt-0">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 bg-slate-50 rounded">
+                    <p className="text-xs text-slate-500">Open Tasks</p>
+                    <p className="text-xl font-bold text-slate-800">{tasks.filter(t => t.status !== 'Completed').length}</p>
                   </div>
-                ))
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Open Risks */}
-        <Card className="bg-white border-slate-200 shadow-sm">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <AlertTriangle className="h-5 w-5 text-orange-600" />
-              <span>Open Risks</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {risks.length === 0 ? (
-                <p className="text-sm text-slate-500 text-center py-8">No open risks</p>
-              ) : (
-                risks.map((risk) => (
-                  <div key={risk.id} className="flex items-start space-x-3 pb-3 border-b border-slate-100 last:border-0">
-                    <div className={`px-2 py-1 rounded text-xs font-medium ${
-                      risk.severity === 'Critical' ? 'risk-critical' :
-                      risk.severity === 'High' ? 'risk-high' :
-                      risk.severity === 'Medium' ? 'risk-medium' : 'risk-low'
-                    }`}>
-                      {risk.severity}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-800 truncate">{risk.title}</p>
-                      <p className="text-xs text-slate-500 mt-1">{risk.customer_name}</p>
-                    </div>
+                  <div className="p-3 bg-red-50 rounded">
+                    <p className="text-xs text-red-600">Overdue</p>
+                    <p className="text-xl font-bold text-red-600">{overdueTasks.length}</p>
                   </div>
-                ))
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* My Tasks */}
-        <Card className="bg-white border-slate-200 shadow-sm">
-          <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
-              <svg className="h-5 w-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-              </svg>
-              <span>My Tasks</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {tasks.length === 0 ? (
-                <p className="text-sm text-slate-500 text-center py-8">No pending tasks</p>
-              ) : (
-                tasks.map((task) => (
-                  <div key={task.id} className="flex items-start space-x-3 pb-3 border-b border-slate-100 last:border-0">
-                    <div className={`px-2 py-1 rounded text-xs font-medium ${
-                      task.priority === 'Critical' ? 'bg-red-100 text-red-700' :
-                      task.priority === 'High' ? 'bg-orange-100 text-orange-700' :
-                      task.priority === 'Medium' ? 'bg-yellow-100 text-yellow-700' : 'bg-blue-100 text-blue-700'
-                    }`}>
-                      {task.priority}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-800 truncate">{task.title}</p>
-                      <p className="text-xs text-slate-500 mt-1">
-                        {task.customer_name} • Due: {new Date(task.due_date).toLocaleDateString()}
-                      </p>
-                    </div>
+                  <div className="p-3 bg-blue-50 rounded">
+                    <p className="text-xs text-blue-600">My Accounts</p>
+                    <p className="text-xl font-bold text-blue-600">{customers.length}</p>
                   </div>
-                ))
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+                  <div className="p-3 bg-green-50 rounded">
+                    <p className="text-xs text-green-600">Activities Today</p>
+                    <p className="text-xl font-bold text-green-600">{activities.filter(a => new Date(a.activity_date).toDateString() === new Date().toDateString()).length}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* Account Health Tab */}
+        <TabsContent value="health" className="space-y-4 mt-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Card className="bg-green-50 border-green-200">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <Heart className="text-green-600" size={24} />
+                  <Badge className="bg-green-100 text-green-700">Healthy</Badge>
+                </div>
+                <p className="text-3xl font-bold text-green-700 mt-2">{stats?.healthy_customers || 0}</p>
+                <p className="text-sm text-green-600">accounts performing well</p>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-yellow-50 border-yellow-200">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <AlertTriangle className="text-yellow-600" size={24} />
+                  <Badge className="bg-yellow-100 text-yellow-700">At Risk</Badge>
+                </div>
+                <p className="text-3xl font-bold text-yellow-700 mt-2">{stats?.at_risk_customers || 0}</p>
+                <p className="text-sm text-yellow-600">need attention</p>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-red-50 border-red-200">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <AlertTriangle className="text-red-600" size={24} />
+                  <Badge className="bg-red-100 text-red-700">Critical</Badge>
+                </div>
+                <p className="text-3xl font-bold text-red-700 mt-2">{stats?.critical_customers || 0}</p>
+                <p className="text-sm text-red-600">immediate action required</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Health Distribution */}
+          <Card>
+            <CardHeader className="p-3 pb-2">
+              <CardTitle className="text-sm font-medium">Health Distribution</CardTitle>
+            </CardHeader>
+            <CardContent className="p-3">
+              <div className="h-4 bg-slate-100 rounded-full overflow-hidden flex">
+                <div className="bg-green-500 h-full" style={{ width: `${(stats?.healthy_customers / stats?.total_customers) * 100 || 0}%` }} />
+                <div className="bg-yellow-500 h-full" style={{ width: `${(stats?.at_risk_customers / stats?.total_customers) * 100 || 0}%` }} />
+                <div className="bg-red-500 h-full" style={{ width: `${(stats?.critical_customers / stats?.total_customers) * 100 || 0}%` }} />
+              </div>
+              <div className="flex justify-between mt-2 text-xs text-slate-600">
+                <span className="flex items-center"><div className="w-2 h-2 bg-green-500 rounded mr-1" /> Healthy ({stats?.healthy_customers || 0})</span>
+                <span className="flex items-center"><div className="w-2 h-2 bg-yellow-500 rounded mr-1" /> At Risk ({stats?.at_risk_customers || 0})</span>
+                <span className="flex items-center"><div className="w-2 h-2 bg-red-500 rounded mr-1" /> Critical ({stats?.critical_customers || 0})</span>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Billing Health Tab */}
+        <TabsContent value="billing" className="space-y-4 mt-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <Card>
+              <CardContent className="p-3">
+                <p className="text-xs text-slate-500">Total ARR</p>
+                <p className="text-xl font-bold text-slate-800">{formatINR(stats?.total_arr)}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-3">
+                <p className="text-xs text-slate-500">Pipeline Value</p>
+                <p className="text-xl font-bold text-purple-600">{formatINR(stats?.pipeline_value)}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-3">
+                <p className="text-xs text-slate-500">Open Opportunities</p>
+                <p className="text-xl font-bold text-blue-600">{stats?.active_opportunities || 0}</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-3">
+                <p className="text-xs text-slate-500">Renewals (90d)</p>
+                <p className="text-xl font-bold text-orange-600">{upcomingRenewals.length}</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Revenue by Health */}
+          <Card>
+            <CardHeader className="p-3 pb-2">
+              <CardTitle className="text-sm font-medium">Revenue at Risk</CardTitle>
+            </CardHeader>
+            <CardContent className="p-3">
+              <div className="space-y-2">
+                {atRiskCustomers.slice(0, 5).map(customer => (
+                  <div key={customer.id} className="flex items-center justify-between p-2 bg-slate-50 rounded">
+                    <div className="flex items-center space-x-2">
+                      <Badge className={customer.health_status === 'Critical' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}>
+                        {customer.health_status}
+                      </Badge>
+                      <span className="text-sm font-medium">{customer.company_name}</span>
+                    </div>
+                    <span className="text-sm font-bold">{formatINR(customer.arr)}</span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

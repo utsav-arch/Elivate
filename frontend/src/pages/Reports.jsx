@@ -5,28 +5,36 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Button } from '../components/ui/button';
 import { Badge } from '../components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { 
-  BarChart3, TrendingUp, Users, AlertTriangle, IndianRupee, 
-  Download, Calendar, RefreshCw, Filter
+import {
+  Download,
+  FileText,
+  Heart,
+  IndianRupee,
+  TrendingUp,
+  TrendingDown,
+  Users,
+  AlertTriangle,
+  Activity,
+  Calendar,
+  RefreshCw,
+  BarChart3,
+  PieChart
 } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, LineChart, Line } from 'recharts';
+import { toast } from 'sonner';
 
-// Format currency in INR
 const formatINR = (amount) => {
   if (!amount) return '₹0';
-  if (amount >= 10000000) {
-    return `₹${(amount / 10000000).toFixed(1)}Cr`;
-  } else if (amount >= 100000) {
-    return `₹${(amount / 100000).toFixed(1)}L`;
-  }
+  if (amount >= 10000000) return `₹${(amount / 10000000).toFixed(1)}Cr`;
+  if (amount >= 100000) return `₹${(amount / 100000).toFixed(1)}L`;
   return `₹${amount.toLocaleString('en-IN')}`;
 };
-
-const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
 
 export default function Reports() {
   const [stats, setStats] = useState(null);
   const [customers, setCustomers] = useState([]);
+  const [churnData, setChurnData] = useState(null);
+  const [activities, setActivities] = useState([]);
+  const [opportunities, setOpportunities] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -35,353 +43,301 @@ export default function Reports() {
 
   const loadData = async () => {
     try {
-      const [statsRes, customersRes] = await Promise.all([
+      const [statsRes, customersRes, churnRes, activitiesRes, oppsRes] = await Promise.all([
         axios.get(`${API}/dashboard/stats`),
-        axios.get(`${API}/customers`)
+        axios.get(`${API}/customers`),
+        axios.get(`${API}/reports/churn`),
+        axios.get(`${API}/activities`),
+        axios.get(`${API}/opportunities`)
       ]);
       setStats(statsRes.data);
       setCustomers(customersRes.data);
+      setChurnData(churnRes.data);
+      setActivities(activitiesRes.data);
+      setOpportunities(oppsRes.data);
     } catch (error) {
-      console.error('Error loading data:', error);
+      console.error('Failed to load reports');
     } finally {
       setLoading(false);
     }
   };
 
-  // Generate report data
-  const healthDistribution = [
-    { name: 'Healthy', value: customers.filter(c => c.health_status === 'Healthy').length, color: '#10b981' },
-    { name: 'At Risk', value: customers.filter(c => c.health_status === 'At Risk').length, color: '#f59e0b' },
-    { name: 'Critical', value: customers.filter(c => c.health_status === 'Critical').length, color: '#ef4444' }
-  ];
+  const exportToCSV = (data, filename) => {
+    const headers = Object.keys(data[0] || {});
+    const csv = [headers.join(','), ...data.map(row => headers.map(h => JSON.stringify(row[h] || '')).join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${filename}.csv`;
+    a.click();
+    toast.success(`${filename}.csv downloaded`);
+  };
 
-  const regionData = [
-    { region: 'South India', customers: customers.filter(c => c.region === 'South India').length, arr: customers.filter(c => c.region === 'South India').reduce((sum, c) => sum + (c.arr || 0), 0) },
-    { region: 'West India', customers: customers.filter(c => c.region === 'West India').length, arr: customers.filter(c => c.region === 'West India').reduce((sum, c) => sum + (c.arr || 0), 0) },
-    { region: 'North India', customers: customers.filter(c => c.region === 'North India').length, arr: customers.filter(c => c.region === 'North India').reduce((sum, c) => sum + (c.arr || 0), 0) }
-  ];
-
-  const accountStatusData = [
-    { status: 'Live', count: customers.filter(c => c.account_status === 'Live').length || 18 },
-    { status: 'Onboarding', count: customers.filter(c => c.account_status === 'Onboarding').length || 5 },
-    { status: 'POC/Pilot', count: customers.filter(c => c.account_status === 'POC/Pilot').length || 4 },
-    { status: 'UAT', count: customers.filter(c => c.account_status === 'UAT').length || 2 },
-    { status: 'Hold', count: customers.filter(c => c.account_status === 'Hold').length || 1 },
-    { status: 'Churn', count: customers.filter(c => c.account_status === 'Churn').length || 0 }
-  ];
-
-  const monthlyTrend = [
-    { month: 'Jul', newCustomers: 2, churn: 0, arr: 4500000 },
-    { month: 'Aug', newCustomers: 3, churn: 1, arr: 5200000 },
-    { month: 'Sep', newCustomers: 4, churn: 0, arr: 6100000 },
-    { month: 'Oct', newCustomers: 2, churn: 1, arr: 6800000 },
-    { month: 'Nov', newCustomers: 5, churn: 0, arr: 7500000 },
-    { month: 'Dec', newCustomers: 3, churn: 0, arr: 8200000 }
-  ];
-
-  const csmPerformance = [
-    { name: 'Priya Sharma', accounts: 5, healthyPct: 80, atRiskPct: 20, arr: 15000000 },
-    { name: 'Vikram Patel', accounts: 4, healthyPct: 75, atRiskPct: 25, arr: 12000000 },
-    { name: 'Rajesh Kumar', accounts: 5, healthyPct: 100, atRiskPct: 0, arr: 18000000 },
-    { name: 'Ananya Reddy', accounts: 4, healthyPct: 50, atRiskPct: 50, arr: 8000000 },
-    { name: 'Deepak Verma', accounts: 4, healthyPct: 75, atRiskPct: 25, arr: 11000000 }
-  ];
-
-  const renewalForecast = [
-    { quarter: 'Q1 2025', renewals: 8, value: 28000000, atRisk: 2 },
-    { quarter: 'Q2 2025', renewals: 6, value: 22000000, atRisk: 1 },
-    { quarter: 'Q3 2025', renewals: 10, value: 35000000, atRisk: 3 },
-    { quarter: 'Q4 2025', renewals: 6, value: 18000000, atRisk: 0 }
-  ];
+  // Calculate metrics
+  const healthyCustomers = customers.filter(c => c.health_status === 'Healthy');
+  const atRiskCustomers = customers.filter(c => c.health_status === 'At Risk');
+  const criticalCustomers = customers.filter(c => c.health_status === 'Critical');
+  const upcomingRenewals = customers.filter(c => {
+    if (!c.renewal_date) return false;
+    const days = Math.ceil((new Date(c.renewal_date) - new Date()) / (1000 * 60 * 60 * 24));
+    return days > 0 && days <= 90;
+  });
+  const inactiveAccounts = customers.filter(c => {
+    const lastActivity = activities.find(a => a.customer_id === c.id);
+    if (!lastActivity) return true;
+    const daysSince = Math.ceil((new Date() - new Date(lastActivity.activity_date)) / (1000 * 60 * 60 * 24));
+    return daysSince > 30;
+  });
+  const expansionOpps = opportunities.filter(o => o.stage !== 'Closed Lost' && o.stage !== 'Closed Won');
 
   if (loading) {
-    return <div className="flex items-center justify-center h-96"><div className="spinner"></div></div>;
+    return <div className="flex items-center justify-center h-96"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>;
   }
 
   return (
-    <div className="px-6 py-8 space-y-6" data-testid="reports-page">
-      {/* Header */}
+    <div className="p-4 space-y-4">
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-            <BarChart3 size={24} className="text-blue-600" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold text-slate-800">Reports & Analytics</h1>
-            <p className="text-slate-600">Comprehensive insights into your customer success metrics</p>
-          </div>
+        <div>
+          <h1 className="text-xl font-bold text-slate-800">Reports</h1>
+          <p className="text-sm text-slate-500">Analytics and insights</p>
         </div>
-        <div className="flex items-center space-x-3">
-          <Button variant="outline" className="flex items-center space-x-2">
-            <Calendar size={16} />
-            <span>Last 30 Days</span>
-          </Button>
-          <Button variant="outline" onClick={loadData}>
-            <RefreshCw size={16} />
-          </Button>
-          <Button className="bg-blue-600 hover:bg-blue-700 flex items-center space-x-2">
-            <Download size={16} />
-            <span>Export All</span>
-          </Button>
-        </div>
+        <Button variant="outline" size="sm" onClick={loadData}>
+          <RefreshCw size={14} className="mr-1" /> Refresh
+        </Button>
       </div>
 
-      {/* Report Tabs */}
-      <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="mb-6">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="customers">Customer Analytics</TabsTrigger>
-          <TabsTrigger value="csm">CSM Performance</TabsTrigger>
-          <TabsTrigger value="renewals">Renewal Forecast</TabsTrigger>
+      <Tabs defaultValue="health" className="w-full">
+        <TabsList className="h-9 flex-wrap">
+          <TabsTrigger value="health" className="text-xs">Account Health</TabsTrigger>
+          <TabsTrigger value="billing" className="text-xs">Billing & Renewal</TabsTrigger>
+          <TabsTrigger value="expansion" className="text-xs">Expansion</TabsTrigger>
+          <TabsTrigger value="churn" className="text-xs">Churn Analysis</TabsTrigger>
+          <TabsTrigger value="engagement" className="text-xs">Engagement</TabsTrigger>
+          <TabsTrigger value="inactive" className="text-xs">Inactive Accounts</TabsTrigger>
         </TabsList>
 
-        {/* Overview Tab */}
-        <TabsContent value="overview" className="space-y-6">
-          {/* KPI Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card className="bg-white">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm text-slate-600">Total Customers</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-slate-800">{customers.length}</div>
-                <p className="text-xs text-green-600">+12% from last month</p>
-              </CardContent>
-            </Card>
-            <Card className="bg-white">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm text-slate-600">Total ARR</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-slate-800">{formatINR(stats?.total_arr)}</div>
-                <p className="text-xs text-green-600">+8% from last month</p>
-              </CardContent>
-            </Card>
-            <Card className="bg-white">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm text-slate-600">Health Score Avg</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-slate-800">{Math.round(customers.reduce((sum, c) => sum + (c.health_score || 0), 0) / customers.length || 0)}</div>
-                <p className="text-xs text-orange-600">-2 from last month</p>
-              </CardContent>
-            </Card>
-            <Card className="bg-white">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm text-slate-600">Net Revenue Retention</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold text-slate-800">112%</div>
-                <p className="text-xs text-green-600">Above target (100%)</p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Charts Row */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className="bg-white">
-              <CardHeader>
-                <CardTitle>Health Distribution</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={250}>
-                  <PieChart>
-                    <Pie
-                      data={healthDistribution}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={100}
-                      dataKey="value"
-                      label={({ name, value }) => `${name}: ${value}`}
-                    >
-                      {healthDistribution.map((entry, index) => (
-                        <Cell key={index} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-white">
-              <CardHeader>
-                <CardTitle>Account Status Distribution</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={accountStatusData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="status" tick={{ fontSize: 12 }} />
-                    <YAxis />
-                    <Tooltip />
-                    <Bar dataKey="count" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Monthly Trend */}
-          <Card className="bg-white">
-            <CardHeader>
-              <CardTitle>Monthly ARR & Customer Trend</CardTitle>
+        {/* Account Health Report */}
+        <TabsContent value="health" className="space-y-4 mt-4">
+          <Card>
+            <CardHeader className="p-3 pb-2 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm font-medium flex items-center"><Heart size={14} className="mr-1 text-green-600" /> Account Health Score Report</CardTitle>
+              <Button variant="outline" size="sm" onClick={() => exportToCSV(customers.map(c => ({ name: c.company_name, health: c.health_status, score: c.health_score, arr: c.arr })), 'health_report')}>
+                <Download size={12} className="mr-1" /> Export
+              </Button>
             </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={monthlyTrend}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis yAxisId="left" />
-                  <YAxis yAxisId="right" orientation="right" />
-                  <Tooltip formatter={(value, name) => name === 'arr' ? formatINR(value) : value} />
-                  <Legend />
-                  <Line yAxisId="left" type="monotone" dataKey="newCustomers" stroke="#10b981" name="New Customers" />
-                  <Line yAxisId="left" type="monotone" dataKey="churn" stroke="#ef4444" name="Churn" />
-                  <Line yAxisId="right" type="monotone" dataKey="arr" stroke="#3b82f6" name="ARR" />
-                </LineChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Customer Analytics Tab */}
-        <TabsContent value="customers" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className="bg-white">
-              <CardHeader>
-                <CardTitle>ARR by Region</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={regionData} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis type="number" tickFormatter={(v) => formatINR(v)} />
-                    <YAxis type="category" dataKey="region" width={100} />
-                    <Tooltip formatter={(v) => formatINR(v)} />
-                    <Bar dataKey="arr" fill="#3b82f6" radius={[0, 4, 4, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <Card className="bg-white">
-              <CardHeader>
-                <CardTitle>Top 10 Customers by ARR</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {customers.sort((a, b) => (b.arr || 0) - (a.arr || 0)).slice(0, 10).map((customer, idx) => (
-                    <div key={customer.id} className="flex items-center justify-between py-2 border-b border-slate-100">
-                      <div className="flex items-center space-x-3">
-                        <span className="text-sm font-medium text-slate-500 w-6">{idx + 1}.</span>
-                        <span className="font-medium text-slate-800">{customer.company_name}</span>
-                        <Badge className={customer.health_status === 'Healthy' ? 'bg-green-100 text-green-700' : customer.health_status === 'At Risk' ? 'bg-orange-100 text-orange-700' : 'bg-red-100 text-red-700'}>
-                          {customer.health_status}
-                        </Badge>
-                      </div>
-                      <span className="font-semibold text-slate-800">{formatINR(customer.arr)}</span>
-                    </div>
-                  ))}
+            <CardContent className="p-3">
+              <div className="grid grid-cols-3 gap-3 mb-4">
+                <div className="p-3 bg-green-50 rounded text-center">
+                  <p className="text-2xl font-bold text-green-700">{healthyCustomers.length}</p>
+                  <p className="text-xs text-green-600">Healthy</p>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {/* CSM Performance Tab */}
-        <TabsContent value="csm" className="space-y-6">
-          <Card className="bg-white">
-            <CardHeader>
-              <CardTitle>CSM Performance Dashboard</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-slate-50 border-b">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">CSM Name</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Accounts</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Health %</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">At Risk %</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Total ARR</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Performance</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {csmPerformance.map((csm, idx) => (
-                      <tr key={idx} className="hover:bg-slate-50">
-                        <td className="px-4 py-3 font-medium text-slate-800">{csm.name}</td>
-                        <td className="px-4 py-3 text-slate-600">{csm.accounts}</td>
-                        <td className="px-4 py-3">
-                          <span className="text-green-600 font-medium">{csm.healthyPct}%</span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className={csm.atRiskPct > 30 ? 'text-red-600' : 'text-orange-600'}>{csm.atRiskPct}%</span>
-                        </td>
-                        <td className="px-4 py-3 font-medium text-slate-800">{formatINR(csm.arr)}</td>
-                        <td className="px-4 py-3">
-                          <Badge className={csm.healthyPct >= 75 ? 'bg-green-100 text-green-700' : csm.healthyPct >= 50 ? 'bg-orange-100 text-orange-700' : 'bg-red-100 text-red-700'}>
-                            {csm.healthyPct >= 75 ? 'Excellent' : csm.healthyPct >= 50 ? 'Good' : 'Needs Attention'}
-                          </Badge>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <div className="p-3 bg-yellow-50 rounded text-center">
+                  <p className="text-2xl font-bold text-yellow-700">{atRiskCustomers.length}</p>
+                  <p className="text-xs text-yellow-600">At Risk</p>
+                </div>
+                <div className="p-3 bg-red-50 rounded text-center">
+                  <p className="text-2xl font-bold text-red-700">{criticalCustomers.length}</p>
+                  <p className="text-xs text-red-600">Critical</p>
+                </div>
+              </div>
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {customers.slice(0, 10).map(c => (
+                  <div key={c.id} className="flex items-center justify-between p-2 bg-slate-50 rounded text-sm">
+                    <span className="font-medium">{c.company_name}</span>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-slate-500">{c.health_score || 0}%</span>
+                      <Badge className={c.health_status === 'Healthy' ? 'bg-green-100 text-green-700' : c.health_status === 'Critical' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}>{c.health_status}</Badge>
+                    </div>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* Renewal Forecast Tab */}
-        <TabsContent value="renewals" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            {renewalForecast.map((q, idx) => (
-              <Card key={idx} className="bg-white">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm text-slate-600">{q.quarter}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold text-slate-800">{formatINR(q.value)}</div>
-                  <div className="flex items-center justify-between mt-2">
-                    <span className="text-xs text-slate-500">{q.renewals} renewals</span>
-                    {q.atRisk > 0 && (
-                      <Badge className="bg-red-100 text-red-700 text-xs">{q.atRisk} at risk</Badge>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          <Card className="bg-white">
-            <CardHeader>
-              <CardTitle>Upcoming Renewals</CardTitle>
+        {/* Billing & Renewal Report */}
+        <TabsContent value="billing" className="space-y-4 mt-4">
+          <Card>
+            <CardHeader className="p-3 pb-2 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm font-medium flex items-center"><IndianRupee size={14} className="mr-1 text-blue-600" /> Renewal & Billing Forecast</CardTitle>
+              <Button variant="outline" size="sm" onClick={() => exportToCSV(upcomingRenewals.map(c => ({ name: c.company_name, arr: c.arr, renewal_date: c.renewal_date })), 'renewal_forecast')}>
+                <Download size={12} className="mr-1" /> Export
+              </Button>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {customers.filter(c => c.renewal_date).sort((a, b) => new Date(a.renewal_date) - new Date(b.renewal_date)).slice(0, 10).map((customer) => (
-                  <div key={customer.id} className="flex items-center justify-between py-3 border-b border-slate-100">
-                    <div className="flex items-center space-x-4">
-                      <div>
-                        <p className="font-medium text-slate-800">{customer.company_name}</p>
-                        <p className="text-sm text-slate-500">{customer.csm_owner_name}</p>
+            <CardContent className="p-3">
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <div className="p-3 bg-blue-50 rounded">
+                  <p className="text-xs text-blue-600">Renewals in 90 days</p>
+                  <p className="text-2xl font-bold text-blue-700">{upcomingRenewals.length}</p>
+                  <p className="text-xs text-blue-500">{formatINR(upcomingRenewals.reduce((s, c) => s + (c.arr || 0), 0))} ARR</p>
+                </div>
+                <div className="p-3 bg-green-50 rounded">
+                  <p className="text-xs text-green-600">Total ARR</p>
+                  <p className="text-2xl font-bold text-green-700">{formatINR(stats?.total_arr)}</p>
+                </div>
+              </div>
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {upcomingRenewals.map(c => {
+                  const days = Math.ceil((new Date(c.renewal_date) - new Date()) / (1000 * 60 * 60 * 24));
+                  return (
+                    <div key={c.id} className="flex items-center justify-between p-2 bg-slate-50 rounded text-sm">
+                      <span className="font-medium">{c.company_name}</span>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-slate-500">{formatINR(c.arr)}</span>
+                        <Badge variant="outline" className={days <= 30 ? 'border-red-300 text-red-600' : ''}>{days}d</Badge>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-4">
-                      <Badge className={customer.health_status === 'Healthy' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}>
-                        {customer.health_status}
-                      </Badge>
-                      <div className="text-right">
-                        <p className="font-semibold text-slate-800">{formatINR(customer.arr)}</p>
-                        <p className="text-xs text-slate-500">{new Date(customer.renewal_date).toLocaleDateString('en-IN')}</p>
-                      </div>
+                  );
+                })}
+                {upcomingRenewals.length === 0 && <p className="text-xs text-slate-500 text-center py-4">No renewals in next 90 days</p>}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Expansion Report */}
+        <TabsContent value="expansion" className="space-y-4 mt-4">
+          <Card>
+            <CardHeader className="p-3 pb-2 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm font-medium flex items-center"><TrendingUp size={14} className="mr-1 text-purple-600" /> Expansion & Upsell Opportunities</CardTitle>
+              <Button variant="outline" size="sm" onClick={() => exportToCSV(expansionOpps.map(o => ({ title: o.title, customer: o.customer_name, value: o.value, stage: o.stage })), 'expansion_report')}>
+                <Download size={12} className="mr-1" /> Export
+              </Button>
+            </CardHeader>
+            <CardContent className="p-3">
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <div className="p-3 bg-purple-50 rounded">
+                  <p className="text-xs text-purple-600">Pipeline Value</p>
+                  <p className="text-2xl font-bold text-purple-700">{formatINR(expansionOpps.reduce((s, o) => s + (o.value || 0), 0))}</p>
+                </div>
+                <div className="p-3 bg-blue-50 rounded">
+                  <p className="text-xs text-blue-600">Active Opportunities</p>
+                  <p className="text-2xl font-bold text-blue-700">{expansionOpps.length}</p>
+                </div>
+              </div>
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {expansionOpps.slice(0, 10).map(o => (
+                  <div key={o.id} className="flex items-center justify-between p-2 bg-slate-50 rounded text-sm">
+                    <div>
+                      <span className="font-medium">{o.title}</span>
+                      <p className="text-xs text-slate-500">{o.customer_name}</p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="font-bold">{formatINR(o.value)}</span>
+                      <Badge variant="outline">{o.stage}</Badge>
                     </div>
                   </div>
                 ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Churn Analysis Report */}
+        <TabsContent value="churn" className="space-y-4 mt-4">
+          <Card>
+            <CardHeader className="p-3 pb-2 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm font-medium flex items-center"><TrendingDown size={14} className="mr-1 text-red-600" /> Churn & Downgrade Analysis</CardTitle>
+              <Button variant="outline" size="sm" onClick={() => exportToCSV(churnData?.records || [], 'churn_analysis')}>
+                <Download size={12} className="mr-1" /> Export
+              </Button>
+            </CardHeader>
+            <CardContent className="p-3">
+              <div className="grid grid-cols-3 gap-3 mb-4">
+                <div className="p-3 bg-red-50 rounded text-center">
+                  <p className="text-2xl font-bold text-red-700">{churnData?.total_churns || 0}</p>
+                  <p className="text-xs text-red-600">Total Churns</p>
+                </div>
+                <div className="p-3 bg-orange-50 rounded text-center">
+                  <p className="text-2xl font-bold text-orange-700">{formatINR(churnData?.total_revenue_lost)}</p>
+                  <p className="text-xs text-orange-600">Revenue Lost</p>
+                </div>
+                <div className="p-3 bg-slate-50 rounded text-center">
+                  <p className="text-2xl font-bold text-slate-700">{churnData?.by_reason?.length || 0}</p>
+                  <p className="text-xs text-slate-600">Unique Reasons</p>
+                </div>
+              </div>
+              {churnData?.by_reason && churnData.by_reason.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-slate-600">Churn by Reason</p>
+                  {churnData.by_reason.map((r, i) => (
+                    <div key={i} className="flex items-center justify-between p-2 bg-slate-50 rounded text-sm">
+                      <span>{r.reason}</span>
+                      <Badge variant="outline">{r.count}</Badge>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {(!churnData?.by_reason || churnData.by_reason.length === 0) && <p className="text-xs text-slate-500 text-center py-4">No churn data available</p>}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Engagement Report */}
+        <TabsContent value="engagement" className="space-y-4 mt-4">
+          <Card>
+            <CardHeader className="p-3 pb-2 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm font-medium flex items-center"><Activity size={14} className="mr-1 text-green-600" /> Customer Engagement & Touchpoints</CardTitle>
+              <Button variant="outline" size="sm" onClick={() => exportToCSV(activities.map(a => ({ customer: a.customer_name, type: a.activity_type, date: a.activity_date })), 'engagement_report')}>
+                <Download size={12} className="mr-1" /> Export
+              </Button>
+            </CardHeader>
+            <CardContent className="p-3">
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <div className="p-3 bg-green-50 rounded">
+                  <p className="text-xs text-green-600">Total Activities</p>
+                  <p className="text-2xl font-bold text-green-700">{activities.length}</p>
+                </div>
+                <div className="p-3 bg-blue-50 rounded">
+                  <p className="text-xs text-blue-600">This Month</p>
+                  <p className="text-2xl font-bold text-blue-700">{activities.filter(a => new Date(a.activity_date).getMonth() === new Date().getMonth()).length}</p>
+                </div>
+              </div>
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {activities.slice(0, 10).map(a => (
+                  <div key={a.id} className="flex items-center justify-between p-2 bg-slate-50 rounded text-sm">
+                    <div>
+                      <span className="font-medium">{a.title}</span>
+                      <p className="text-xs text-slate-500">{a.customer_name}</p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Badge variant="outline">{a.activity_type}</Badge>
+                      <span className="text-xs text-slate-500">{new Date(a.activity_date).toLocaleDateString('en-IN')}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Inactive Accounts Report */}
+        <TabsContent value="inactive" className="space-y-4 mt-4">
+          <Card>
+            <CardHeader className="p-3 pb-2 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm font-medium flex items-center"><AlertTriangle size={14} className="mr-1 text-orange-600" /> Inactive Accounts (No activity in 30+ days)</CardTitle>
+              <Button variant="outline" size="sm" onClick={() => exportToCSV(inactiveAccounts.map(c => ({ name: c.company_name, arr: c.arr, health: c.health_status })), 'inactive_accounts')}>
+                <Download size={12} className="mr-1" /> Export
+              </Button>
+            </CardHeader>
+            <CardContent className="p-3">
+              <div className="p-3 bg-orange-50 rounded mb-4">
+                <p className="text-xs text-orange-600">Accounts needing outreach</p>
+                <p className="text-2xl font-bold text-orange-700">{inactiveAccounts.length}</p>
+                <p className="text-xs text-orange-500">{formatINR(inactiveAccounts.reduce((s, c) => s + (c.arr || 0), 0))} ARR at risk</p>
+              </div>
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {inactiveAccounts.slice(0, 10).map(c => (
+                  <div key={c.id} className="flex items-center justify-between p-2 bg-slate-50 rounded text-sm">
+                    <div>
+                      <span className="font-medium">{c.company_name}</span>
+                      <p className="text-xs text-slate-500">{formatINR(c.arr)} ARR</p>
+                    </div>
+                    <Badge className={c.health_status === 'Healthy' ? 'bg-green-100 text-green-700' : c.health_status === 'Critical' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}>{c.health_status}</Badge>
+                  </div>
+                ))}
+                {inactiveAccounts.length === 0 && <p className="text-xs text-slate-500 text-center py-4">All accounts have recent activity</p>}
               </div>
             </CardContent>
           </Card>
