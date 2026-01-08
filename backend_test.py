@@ -1138,6 +1138,15 @@ TechCorp,Technology,ExtraColumn
         self.test_invoices_api()            # New feature - Invoice Management
         self.test_churn_api()               # New feature - Churn Management
         
+        # Test Customer Setup API (from review request)
+        self.test_customer_setup_api()      # Customer Setup & Configuration
+        
+        # Test Dashboard Stats API (verify still works)
+        self.test_dashboard_stats_api()     # Dashboard Statistics
+        
+        # Test Opportunity Stage Change (verify stage_change_log)
+        self.test_opportunity_stage_change_api()  # Opportunity Stage Changes
+        
         return self.print_summary()
 
 if __name__ == "__main__":
