@@ -294,41 +294,15 @@ export default function CustomerDetail() {
       <Card className="bg-white border-slate-200">
         <Tabs defaultValue="overview" className="w-full">
           <TabsList className="w-full justify-start border-b rounded-none h-auto p-0 flex-wrap">
-            <TabsTrigger value="overview" className="rounded-none" data-testid="tab-overview">
-              Overview
-            </TabsTrigger>
-            <TabsTrigger value="invoices" className="rounded-none" data-testid="tab-invoices">
-              <IndianRupee size={14} className="mr-1" />
-              Invoice & Revenue
-            </TabsTrigger>
-            <TabsTrigger value="setup" className="rounded-none" data-testid="tab-setup">
-              <Server size={14} className="mr-1" />
-              Setup Details
-            </TabsTrigger>
-            <TabsTrigger value="usage" className="rounded-none" data-testid="tab-usage">
-              <Cpu size={14} className="mr-1" />
-              Product Usage
-            </TabsTrigger>
-            <TabsTrigger value="insights" className="rounded-none" data-testid="tab-insights">
-              <BarChart3 size={14} className="mr-1" />
-              Data Labs
-            </TabsTrigger>
-            <TabsTrigger value="activities" className="rounded-none" data-testid="tab-activities">
-              Activities ({activities.length})
-            </TabsTrigger>
-            <TabsTrigger value="risks" className="rounded-none" data-testid="tab-risks">
-              Risks ({openRisks.length})
-            </TabsTrigger>
-            <TabsTrigger value="opportunities" className="rounded-none" data-testid="tab-opportunities">
-              Opportunities ({activeOpportunities.length})
-            </TabsTrigger>
-            <TabsTrigger value="documents" className="rounded-none" data-testid="tab-documents">
-              Documents ({documents.length})
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="rounded-none" data-testid="tab-settings">
-              <Settings size={14} className="mr-1" />
-              Account Settings
-            </TabsTrigger>
+            <TabsTrigger value="overview" className="rounded-none text-sm" data-testid="tab-overview">Overview</TabsTrigger>
+            <TabsTrigger value="invoices" className="rounded-none text-sm" data-testid="tab-invoices">Invoices</TabsTrigger>
+            <TabsTrigger value="setup" className="rounded-none text-sm" data-testid="tab-setup">Setup</TabsTrigger>
+            <TabsTrigger value="usage" className="rounded-none text-sm" data-testid="tab-usage">Usage</TabsTrigger>
+            <TabsTrigger value="insights" className="rounded-none text-sm" data-testid="tab-insights">Data Labs</TabsTrigger>
+            <TabsTrigger value="activities" className="rounded-none text-sm" data-testid="tab-activities">Activities ({activities.length})</TabsTrigger>
+            <TabsTrigger value="risks" className="rounded-none text-sm" data-testid="tab-risks">Risks ({openRisks.length})</TabsTrigger>
+            <TabsTrigger value="opportunities" className="rounded-none text-sm" data-testid="tab-opportunities">Opportunities ({activeOpportunities.length})</TabsTrigger>
+            <TabsTrigger value="documents" className="rounded-none text-sm" data-testid="tab-documents">Documents ({documents.length})</TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
