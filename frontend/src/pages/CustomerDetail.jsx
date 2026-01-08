@@ -1062,6 +1062,14 @@ export default function CustomerDetail() {
           onSuccess={handleFormSuccess}
         />
       )}
+
+      {showAccountStatusModal && (
+        <AccountStatusChange
+          customer={customer}
+          onClose={() => setShowAccountStatusModal(false)}
+          onSuccess={handleFormSuccess}
+        />
+      )}
     </div>
   );
 }
