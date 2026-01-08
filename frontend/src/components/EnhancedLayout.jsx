@@ -11,7 +11,11 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
-  BarChart3
+  BarChart3,
+  Link2,
+  Bell,
+  HelpCircle,
+  PieChart
 } from 'lucide-react';
 import { useState } from 'react';
 import { Button } from './ui/button';
@@ -23,6 +27,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
+
+const LOGO_URL = 'https://customer-assets.emergentagent.com/job_42a82ed4-eddd-49b7-b6ed-5a95616485f8/artifacts/2f9xtoea_V1.png';
 
 export default function EnhancedLayout({ children, user, onLogout }) {
   const location = useLocation();
