@@ -30,6 +30,9 @@ class APITester:
         self.opportunity_id = None
         self.stakeholder_id = None
         self.document_id = None
+        self.invoice_id = None
+        self.churn_customer_id = None
+        self.churn_record_id = None
         self.results = {
             "authentication": {"passed": 0, "failed": 0, "details": []},
             "tasks": {"passed": 0, "failed": 0, "details": []},
