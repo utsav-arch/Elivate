@@ -60,16 +60,20 @@ export default function EnhancedLayout({ children, user, onLogout }) {
         <div className="h-16 border-b border-slate-200 flex items-center justify-between px-4">
           {!sidebarCollapsed && (
             <Link to="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-500 rounded-lg flex items-center justify-center">
+              <img src={LOGO_URL} alt="Convin" className="w-8 h-8 rounded-lg object-contain" onError={(e) => {
+                e.target.style.display = 'none';
+                e.target.nextElementSibling.style.display = 'flex';
+              }} />
+              <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-500 rounded-lg items-center justify-center hidden">
                 <span className="text-white font-bold text-sm">CE</span>
               </div>
               <span className="text-lg font-bold text-slate-800">Convin Elevate</span>
             </Link>
           )}
           {sidebarCollapsed && (
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-500 rounded-lg flex items-center justify-center mx-auto">
-              <span className="text-white font-bold text-sm">CE</span>
-            </div>
+            <img src={LOGO_URL} alt="Convin" className="w-8 h-8 rounded-lg mx-auto object-contain" onError={(e) => {
+              e.target.outerHTML = '<div class="w-8 h-8 bg-gradient-to-br from-blue-600 to-blue-500 rounded-lg flex items-center justify-center mx-auto"><span class="text-white font-bold text-sm">CE</span></div>';
+            }} />
           )}
         </div>
 
