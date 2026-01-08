@@ -45,8 +45,10 @@ export default function EnhancedLayout({ children, user, onLogout }) {
     { path: '/customers', icon: Users, label: 'Customers', testId: 'nav-customers' },
     { path: '/tasks', icon: CheckSquare, label: 'Tasks', testId: 'nav-tasks' },
     { path: '/opportunities', icon: TrendingUp, label: 'Opportunity Pipeline', testId: 'nav-opportunities' },
+    { path: '/dashboards', icon: PieChart, label: 'Role Dashboards', testId: 'nav-dashboards' },
     { path: '/reports', icon: BarChart3, label: 'Reports', testId: 'nav-reports' },
     { path: '/data-labs-reports', icon: FileText, label: 'Data Labs', testId: 'nav-datalabs' },
+    { path: '/integrations', icon: Link2, label: 'Integrations', testId: 'nav-integrations' },
     { path: '/settings', icon: Settings, label: 'Settings', testId: 'nav-settings' },
   ];
 
