@@ -301,6 +301,18 @@ export default function CustomerDetail() {
               <IndianRupee size={14} className="mr-1" />
               Invoice & Revenue
             </TabsTrigger>
+            <TabsTrigger value="setup" className="rounded-none" data-testid="tab-setup">
+              <Server size={14} className="mr-1" />
+              Setup Details
+            </TabsTrigger>
+            <TabsTrigger value="usage" className="rounded-none" data-testid="tab-usage">
+              <Cpu size={14} className="mr-1" />
+              Product Usage
+            </TabsTrigger>
+            <TabsTrigger value="insights" className="rounded-none" data-testid="tab-insights">
+              <BarChart3 size={14} className="mr-1" />
+              Data Labs
+            </TabsTrigger>
             <TabsTrigger value="activities" className="rounded-none" data-testid="tab-activities">
               Activities ({activities.length})
             </TabsTrigger>
