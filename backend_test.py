@@ -49,7 +49,10 @@ class APITester:
             "stakeholders": {"passed": 0, "failed": 0, "details": []},
             "documents": {"passed": 0, "failed": 0, "details": []},
             "invoices": {"passed": 0, "failed": 0, "details": []},
-            "churn": {"passed": 0, "failed": 0, "details": []}
+            "churn": {"passed": 0, "failed": 0, "details": []},
+            "customer_setup": {"passed": 0, "failed": 0, "details": []},
+            "dashboard_stats": {"passed": 0, "failed": 0, "details": []},
+            "opportunity_stage_change": {"passed": 0, "failed": 0, "details": []}
         }
 
     def log_result(self, category: str, test_name: str, success: bool, message: str, response_data: Any = None):
