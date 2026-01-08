@@ -897,6 +897,181 @@ TechCorp,Technology,ExtraColumn
         else:
             self.log_result("churn", "Record Churn (Invalid Data)", False, "Not enough customers to test invalid churn data")
 
+    def test_customer_setup_api(self):
+        """Test Customer Setup API (GET/PUT /api/customers/{customer_id}/setup)"""
+        print("\n=== Testing Customer Setup API ===")
+        
+        if not self.customer_id:
+            self.log_result("customer_setup", "Customer Setup API Setup", False, "No customer_id available for testing")
+            return
+        
+        # Test GET setup for existing customer (should return defaults if not found)
+        success, response, status_code = self.make_request("GET", f"/customers/{self.customer_id}/setup")
+        if success and "customer_id" in response:
+            self.log_result("customer_setup", "Get Customer Setup (Default)", True, 
+                          f"Retrieved setup details with defaults for customer {self.customer_id}")
+            
+            # Verify default values are present
+            expected_defaults = ["client_name", "domain_link", "process_name", "integration_type", 
+                               "call_flow_type", "audits_based_on", "languages_supported", "ai_features"]
+            missing_fields = [field for field in expected_defaults if field not in response]
+            if not missing_fields:
+                self.log_result("customer_setup", "Verify Default Fields", True, "All expected default fields present")
+            else:
+                self.log_result("customer_setup", "Verify Default Fields", False, f"Missing fields: {missing_fields}")
+        else:
+            self.log_result("customer_setup", "Get Customer Setup (Default)", False, f"Failed to get setup: {response}", response)
+            return
+        
+        # Test PUT - Update setup with all fields
+        setup_data = {
+            "client_name": "Acme Corporation",
+            "domain_link": "https://acme.convin.ai",
+            "process_name": "Customer Support Process",
+            "integration_done_by": "Technical Team",
+            "onboarding_done_by": "CSM Team",
+            "delivery_spoc": "John Doe",
+            "telephony_name": "Twilio",
+            "integration_type": "API",
+            "call_flow_type": "Inbound",
+            "audits_based_on": "Percentage",
+            "crm_integration": True,
+            "crm_name": "Salesforce",
+            "languages_supported": ["English", "Spanish", "French"],
+            "ai_features": {
+                "sentiment_analysis": True,
+                "call_summarization": True,
+                "real_time_coaching": False,
+                "compliance_monitoring": True,
+                "automated_scoring": True
+            }
+        }
+        
+        success, response, status_code = self.make_request("PUT", f"/customers/{self.customer_id}/setup", setup_data)
+        if success and "message" in response:
+            self.log_result("customer_setup", "Update Customer Setup", True, f"Successfully updated setup for customer {self.customer_id}")
+        else:
+            self.log_result("customer_setup", "Update Customer Setup", False, f"Failed to update setup: {response}", response)
+            return
+        
+        # Test GET setup after update to verify persistence
+        success, response, status_code = self.make_request("GET", f"/customers/{self.customer_id}/setup")
+        if success and "client_name" in response:
+            if response["client_name"] == "Acme Corporation" and response["crm_integration"] == True:
+                self.log_result("customer_setup", "Verify Setup Persistence", True, "Setup data persisted correctly after update")
+            else:
+                self.log_result("customer_setup", "Verify Setup Persistence", False, "Setup data not persisted correctly")
+        else:
+            self.log_result("customer_setup", "Verify Setup Persistence", False, f"Failed to verify setup persistence: {response}", response)
+
+    def test_dashboard_stats_api(self):
+        """Test Dashboard Stats API (GET /api/dashboard/stats)"""
+        print("\n=== Testing Dashboard Stats API ===")
+        
+        success, response, status_code = self.make_request("GET", "/dashboard/stats")
+        if success and "total_customers" in response:
+            # Verify all expected fields are present
+            expected_fields = ["total_customers", "total_arr", "healthy_customers", "at_risk_customers", 
+                             "critical_customers", "open_risks", "pipeline_value"]
+            missing_fields = [field for field in expected_fields if field not in response]
+            
+            if not missing_fields:
+                total_customers = response["total_customers"]
+                total_arr = response["total_arr"]
+                healthy_count = response["healthy_customers"]
+                at_risk_count = response["at_risk_customers"]
+                critical_count = response["critical_customers"]
+                open_risks = response["open_risks"]
+                pipeline_value = response["pipeline_value"]
+                
+                self.log_result("dashboard_stats", "Get Dashboard Stats", True, 
+                              f"Retrieved stats: {total_customers} customers, ₹{total_arr} ARR, {healthy_count} healthy, {at_risk_count} at risk, {critical_count} critical, {open_risks} open risks, ₹{pipeline_value} pipeline")
+            else:
+                self.log_result("dashboard_stats", "Get Dashboard Stats", False, f"Missing required fields: {missing_fields}")
+        else:
+            self.log_result("dashboard_stats", "Get Dashboard Stats", False, f"Failed to get dashboard stats: {response}", response)
+
+    def test_opportunity_stage_change_api(self):
+        """Test Opportunity Stage Change with stage_change_log"""
+        print("\n=== Testing Opportunity Stage Change API ===")
+        
+        # First get an existing opportunity or use the one we created
+        if not self.opportunity_id:
+            # Try to get existing opportunities
+            success, response, status_code = self.make_request("GET", "/opportunities")
+            if success and isinstance(response, list) and len(response) > 0:
+                self.opportunity_id = response[0]["id"]
+                self.log_result("opportunity_stage_change", "Get Existing Opportunity", True, f"Using existing opportunity {self.opportunity_id}")
+            else:
+                self.log_result("opportunity_stage_change", "Opportunity Stage Change Setup", False, "No opportunity available for testing")
+                return
+        
+        # Get current opportunity details
+        success, opportunities, status_code = self.make_request("GET", "/opportunities")
+        if not success:
+            self.log_result("opportunity_stage_change", "Get Opportunity Details", False, "Failed to get opportunities")
+            return
+        
+        # Find our opportunity
+        our_opportunity = None
+        for opp in opportunities:
+            if opp.get("id") == self.opportunity_id:
+                our_opportunity = opp
+                break
+        
+        if not our_opportunity:
+            self.log_result("opportunity_stage_change", "Find Our Opportunity", False, "Could not find our opportunity")
+            return
+        
+        current_stage = our_opportunity.get("stage", "Unknown")
+        self.log_result("opportunity_stage_change", "Get Current Stage", True, f"Current stage: {current_stage}")
+        
+        # Test stage change from current stage to next stage
+        stage_progression = {
+            "Identified": "Qualified",
+            "Qualified": "Proposal",
+            "Proposal": "Negotiation",
+            "Negotiation": "Closed Won"
+        }
+        
+        new_stage = stage_progression.get(current_stage, "Proposal")
+        
+        # Update opportunity stage
+        update_data = {
+            "title": our_opportunity.get("title", "Test Opportunity"),
+            "description": our_opportunity.get("description", "Test Description"),
+            "value": our_opportunity.get("value", 75000),
+            "probability": our_opportunity.get("probability", 70),
+            "stage": new_stage
+        }
+        
+        success, response, status_code = self.make_request("PUT", f"/opportunities/{self.opportunity_id}", update_data)
+        if success and "message" in response:
+            self.log_result("opportunity_stage_change", "Update Opportunity Stage", True, 
+                          f"Successfully changed stage from {current_stage} to {new_stage}")
+            
+            # Verify the stage change was persisted
+            success, updated_opportunities, status_code = self.make_request("GET", "/opportunities")
+            if success:
+                updated_opportunity = None
+                for opp in updated_opportunities:
+                    if opp.get("id") == self.opportunity_id:
+                        updated_opportunity = opp
+                        break
+                
+                if updated_opportunity and updated_opportunity.get("stage") == new_stage:
+                    self.log_result("opportunity_stage_change", "Verify Stage Change", True, 
+                                  f"Stage change persisted correctly: {new_stage}")
+                else:
+                    self.log_result("opportunity_stage_change", "Verify Stage Change", False, 
+                                  f"Stage change not persisted correctly")
+            else:
+                self.log_result("opportunity_stage_change", "Verify Stage Change", False, 
+                              "Failed to verify stage change")
+        else:
+            self.log_result("opportunity_stage_change", "Update Opportunity Stage", False, 
+                          f"Failed to update opportunity stage: {response}", response)
+
     def print_summary(self):
         """Print test summary"""
         print("\n" + "="*60)
