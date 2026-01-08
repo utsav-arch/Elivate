@@ -1098,6 +1098,249 @@ async def get_datalabs_reports(customer_id: Optional[str] = None, current_user: 
             report['created_at'] = datetime.fromisoformat(report['created_at'])
     return reports
 
+# Invoice Models and Routes
+class Invoice(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    customer_id: str
+    invoice_number: str
+    invoice_date: str
+    billing_period_start: Optional[str] = None
+    billing_period_end: Optional[str] = None
+    invoice_amount: float
+    paid_amount: float = 0.0
+    due_date: str
+    status: str = "Draft"  # Draft, Raised, Partially Paid, Paid, Overdue
+    created_by_id: Optional[str] = None
+    created_by_name: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class InvoiceCreate(BaseModel):
+    invoice_number: str
+    invoice_date: str
+    billing_period_start: Optional[str] = None
+    billing_period_end: Optional[str] = None
+    invoice_amount: float
+    paid_amount: float = 0.0
+    due_date: str
+    status: str = "Draft"
+
+@api_router.post("/customers/{customer_id}/invoices")
+async def create_invoice(customer_id: str, invoice_data: InvoiceCreate, current_user: Dict = Depends(get_current_user)):
+    # Verify customer exists
+    customer = await db.customers.find_one({"id": customer_id}, {"_id": 0})
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    
+    # Get user details
+    user = await db.users.find_one({"id": current_user['user_id']}, {"_id": 0})
+    
+    invoice = Invoice(
+        customer_id=customer_id,
+        **invoice_data.model_dump(),
+        created_by_id=current_user['user_id'],
+        created_by_name=user.get('name') if user else None
+    )
+    
+    invoice_dict = invoice.model_dump()
+    invoice_dict['created_at'] = invoice_dict['created_at'].isoformat()
+    invoice_dict['updated_at'] = invoice_dict['updated_at'].isoformat()
+    
+    await db.invoices.insert_one(invoice_dict)
+    
+    # Auto-flag if invoice is overdue and unpaid
+    if invoice_data.status == 'Overdue' or (invoice_data.due_date < datetime.now(timezone.utc).date().isoformat() and invoice_data.status not in ['Paid']):
+        # Create commercial risk automatically
+        risk_dict = {
+            "id": str(uuid.uuid4()),
+            "customer_id": customer_id,
+            "customer_name": customer.get('company_name'),
+            "category": "Commercial",
+            "subcategory": "Payment Overdue",
+            "severity": "High",
+            "status": "Open",
+            "title": f"Overdue Invoice: {invoice_data.invoice_number}",
+            "description": f"Invoice {invoice_data.invoice_number} is overdue. Amount: ₹{invoice_data.invoice_amount - invoice_data.paid_amount}",
+            "revenue_impact": invoice_data.invoice_amount - invoice_data.paid_amount,
+            "identified_date": datetime.now(timezone.utc).date().isoformat(),
+            "assigned_to_id": current_user['user_id'],
+            "assigned_to_name": user.get('name') if user else None,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.risks.insert_one(risk_dict)
+    
+    return {"message": "Invoice created successfully", "id": invoice.id}
+
+@api_router.get("/customers/{customer_id}/invoices")
+async def get_customer_invoices(customer_id: str, current_user: Dict = Depends(get_current_user)):
+    invoices = await db.invoices.find({"customer_id": customer_id}, {"_id": 0}).sort("invoice_date", -1).to_list(100)
+    
+    # Update status to Overdue if past due date and not paid
+    today = datetime.now(timezone.utc).date().isoformat()
+    for inv in invoices:
+        if inv.get('due_date') and inv['due_date'] < today and inv.get('status') not in ['Paid', 'Overdue']:
+            inv['status'] = 'Overdue'
+            await db.invoices.update_one({"id": inv['id']}, {"$set": {"status": "Overdue"}})
+    
+    return invoices
+
+@api_router.put("/customers/{customer_id}/invoices/{invoice_id}")
+async def update_invoice(customer_id: str, invoice_id: str, invoice_data: dict, current_user: Dict = Depends(get_current_user)):
+    existing = await db.invoices.find_one({"id": invoice_id, "customer_id": customer_id}, {"_id": 0})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+    
+    update_dict = {k: v for k, v in invoice_data.items() if v is not None}
+    update_dict['updated_at'] = datetime.now(timezone.utc).isoformat()
+    
+    # Auto-update status based on payment
+    if 'paid_amount' in update_dict:
+        invoice_amount = update_dict.get('invoice_amount', existing.get('invoice_amount', 0))
+        paid_amount = update_dict['paid_amount']
+        if paid_amount >= invoice_amount:
+            update_dict['status'] = 'Paid'
+        elif paid_amount > 0:
+            update_dict['status'] = 'Partially Paid'
+    
+    await db.invoices.update_one({"id": invoice_id}, {"$set": update_dict})
+    return {"message": "Invoice updated successfully"}
+
+@api_router.delete("/customers/{customer_id}/invoices/{invoice_id}")
+async def delete_invoice(customer_id: str, invoice_id: str, current_user: Dict = Depends(get_current_user)):
+    result = await db.invoices.delete_one({"id": invoice_id, "customer_id": customer_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+    return {"message": "Invoice deleted successfully"}
+
+# Churn Models and Routes
+class ChurnRecord(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    customer_id: str
+    customer_name: str
+    churn_type: str  # Logo Churn, Partial Churn, Downgrade
+    effective_churn_date: str
+    revenue_impact: float
+    contract_end_date: Optional[str] = None
+    primary_reason: str
+    primary_reason_other: Optional[str] = None
+    secondary_reasons: List[str] = []
+    could_have_been_prevented: str
+    owner_responsible: str
+    action_taken_before_churn: Optional[str] = None
+    customer_feedback: Optional[str] = None
+    internal_notes: Optional[str] = None
+    arr_at_churn: Optional[float] = None
+    csm_owner: Optional[str] = None
+    am_owner: Optional[str] = None
+    recorded_by_id: Optional[str] = None
+    recorded_by_name: Optional[str] = None
+    churned_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ChurnRequest(BaseModel):
+    account_status: str
+    churn_data: Dict[str, Any]
+
+@api_router.put("/customers/{customer_id}/churn")
+async def record_customer_churn(customer_id: str, churn_request: ChurnRequest, current_user: Dict = Depends(get_current_user)):
+    # Verify customer exists
+    customer = await db.customers.find_one({"id": customer_id}, {"_id": 0})
+    if not customer:
+        raise HTTPException(status_code=404, detail="Customer not found")
+    
+    # Get user details
+    user = await db.users.find_one({"id": current_user['user_id']}, {"_id": 0})
+    
+    # Create churn record
+    churn_data = churn_request.churn_data
+    churn_record = {
+        "id": str(uuid.uuid4()),
+        "customer_id": customer_id,
+        "customer_name": customer.get('company_name'),
+        "churn_type": churn_data.get('churn_type'),
+        "effective_churn_date": churn_data.get('effective_churn_date'),
+        "revenue_impact": churn_data.get('revenue_impact', 0),
+        "contract_end_date": churn_data.get('contract_end_date'),
+        "primary_reason": churn_data.get('primary_reason'),
+        "primary_reason_other": churn_data.get('primary_reason_other'),
+        "secondary_reasons": churn_data.get('secondary_reasons', []),
+        "could_have_been_prevented": churn_data.get('could_have_been_prevented'),
+        "owner_responsible": churn_data.get('owner_responsible'),
+        "action_taken_before_churn": churn_data.get('action_taken_before_churn'),
+        "customer_feedback": churn_data.get('customer_feedback'),
+        "internal_notes": churn_data.get('internal_notes'),
+        "arr_at_churn": customer.get('arr'),
+        "csm_owner": customer.get('csm_owner_name'),
+        "am_owner": customer.get('am_owner_name'),
+        "recorded_by_id": current_user['user_id'],
+        "recorded_by_name": user.get('name') if user else None,
+        "churned_at": datetime.now(timezone.utc).isoformat(),
+        "created_at": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.churn_records.insert_one(churn_record)
+    
+    # Update customer status
+    await db.customers.update_one(
+        {"id": customer_id},
+        {"$set": {
+            "account_status": "Churn",
+            "health_status": "Critical",
+            "health_score": 0,
+            "churned_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    return {"message": "Churn recorded successfully", "churn_record_id": churn_record['id']}
+
+@api_router.get("/churn-records")
+async def get_churn_records(current_user: Dict = Depends(get_current_user)):
+    records = await db.churn_records.find({}, {"_id": 0}).sort("churned_at", -1).to_list(1000)
+    return records
+
+@api_router.get("/customers/{customer_id}/churn-record")
+async def get_customer_churn_record(customer_id: str, current_user: Dict = Depends(get_current_user)):
+    record = await db.churn_records.find_one({"customer_id": customer_id}, {"_id": 0})
+    if not record:
+        raise HTTPException(status_code=404, detail="Churn record not found")
+    return record
+
+# Churn Reports
+@api_router.get("/reports/churn")
+async def get_churn_reports(current_user: Dict = Depends(get_current_user)):
+    # Get all churn records
+    records = await db.churn_records.find({}, {"_id": 0}).to_list(1000)
+    
+    # Aggregate by reason
+    by_reason = {}
+    by_csm = {}
+    by_type = {}
+    total_revenue_lost = 0
+    
+    for record in records:
+        reason = record.get('primary_reason', 'Unknown')
+        csm = record.get('csm_owner', 'Unassigned')
+        churn_type = record.get('churn_type', 'Unknown')
+        revenue = record.get('revenue_impact', 0)
+        
+        by_reason[reason] = by_reason.get(reason, 0) + 1
+        by_csm[csm] = by_csm.get(csm, 0) + 1
+        by_type[churn_type] = by_type.get(churn_type, 0) + 1
+        total_revenue_lost += revenue
+    
+    return {
+        "total_churns": len(records),
+        "total_revenue_lost": total_revenue_lost,
+        "by_reason": [{"reason": k, "count": v} for k, v in by_reason.items()],
+        "by_csm": [{"csm": k, "count": v} for k, v in by_csm.items()],
+        "by_type": [{"type": k, "count": v} for k, v in by_type.items()],
+        "records": records
+    }
+
 # Dashboard Stats
 @api_router.get("/dashboard/stats")
 async def get_dashboard_stats(current_user: Dict = Depends(get_current_user)):
