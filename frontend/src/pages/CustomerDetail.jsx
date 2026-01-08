@@ -6,7 +6,7 @@ import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Badge } from '../components/ui/badge';
-import { ArrowLeft, Edit, Plus, AlertTriangle, TrendingUp, Activity as ActivityIcon, FileText, Heart, Users, Upload, ExternalLink, Trash2, Download, Eye } from 'lucide-react';
+import { ArrowLeft, Edit, Plus, AlertTriangle, TrendingUp, Activity as ActivityIcon, FileText, Heart, Users, Upload, ExternalLink, Trash2, Download, Eye, IndianRupee, Settings } from 'lucide-react';
 import ActivityForm from '../components/ActivityForm';
 import RiskForm from '../components/RiskForm';
 import OpportunityForm from '../components/OpportunityForm';
@@ -14,6 +14,8 @@ import CustomerEditForm from '../components/CustomerEditForm';
 import HealthChangeModal from '../components/HealthChangeModal';
 import StakeholderForm from '../components/StakeholderForm';
 import DocumentUploadModal from '../components/DocumentUploadModal';
+import InvoiceSection from '../components/InvoiceSection';
+import AccountStatusChange from '../components/AccountStatusChange';
 import { toast } from 'sonner';
 
 // Format currency in INR
