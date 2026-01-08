@@ -490,43 +490,6 @@ export default function CustomerDetail() {
               )}
             </div>
           </TabsContent>
-                  {customer.stakeholders.map((stakeholder, idx) => (
-                    <div key={idx} className="p-4 bg-slate-50 rounded-lg">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                            <Users size={18} className="text-blue-600" />
-                          </div>
-                          <div>
-                            <p className="font-medium text-slate-800">{stakeholder.full_name}</p>
-                            <p className="text-sm text-slate-600">{stakeholder.job_title}</p>
-                            <p className="text-xs text-slate-500">{stakeholder.email}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          {stakeholder.is_primary && (
-                            <Badge className="bg-green-100 text-green-700 text-xs">Primary</Badge>
-                          )}
-                          {stakeholder.is_decision_maker && (
-                            <Badge className="bg-purple-100 text-purple-700 text-xs">DM</Badge>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => openStakeholderEdit(stakeholder)}
-                          >
-                            <Edit size={14} />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-slate-500">No stakeholders added yet</p>
-              )}
-            </div>
-          </TabsContent>
 
           {/* Activities Tab */}
           <TabsContent value="activities" className="p-6">
