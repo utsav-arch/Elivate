@@ -196,6 +196,54 @@ function App() {
             }
           />
           <Route
+            path="/integrations"
+            element={
+              user ? (
+                <Layout user={user} onLogout={handleLogout}>
+                  <IntegrationsPage />
+                </Layout>
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
+          <Route
+            path="/notifications"
+            element={
+              user ? (
+                <Layout user={user} onLogout={handleLogout}>
+                  <NotificationsPage />
+                </Layout>
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
+          <Route
+            path="/help"
+            element={
+              user ? (
+                <Layout user={user} onLogout={handleLogout}>
+                  <HelpPage />
+                </Layout>
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
+          <Route
+            path="/dashboards"
+            element={
+              user ? (
+                <Layout user={user} onLogout={handleLogout}>
+                  <RoleDashboards />
+                </Layout>
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
+          <Route
             path="*"
             element={
               user ? (
