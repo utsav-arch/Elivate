@@ -672,6 +672,228 @@ TechCorp,Technology,ExtraColumn
         else:
             self.log_result("documents", "List Documents", False, f"Failed to get documents: {response}", response)
 
+    def test_invoices_api(self):
+        """Test Invoice APIs"""
+        print("\n=== Testing Invoice APIs ===")
+        
+        # Use customer_1 as specified in the review request
+        test_customer_id = "customer_1"
+        
+        # Verify customer_1 exists
+        success, response, status_code = self.make_request("GET", f"/customers/{test_customer_id}")
+        if not success:
+            self.log_result("invoices", "Invoice API Setup", False, f"Customer {test_customer_id} not found for testing")
+            return
+        
+        # Test GET invoices (initially empty)
+        success, response, status_code = self.make_request("GET", f"/customers/{test_customer_id}/invoices")
+        if success and isinstance(response, list):
+            initial_count = len(response)
+            self.log_result("invoices", "Get Invoices (Initial)", True, f"Retrieved {initial_count} invoices for customer_1")
+        else:
+            self.log_result("invoices", "Get Invoices (Initial)", False, f"Failed to get invoices: {response}", response)
+        
+        # Test POST - Create invoice with all required fields
+        invoice_data = {
+            "invoice_number": "INV-2025-001",
+            "invoice_date": "2025-01-15",
+            "billing_period_start": "2025-01-01",
+            "billing_period_end": "2025-01-31",
+            "invoice_amount": 50000.0,
+            "paid_amount": 0.0,
+            "due_date": "2025-02-15",
+            "status": "Raised"
+        }
+        
+        success, response, status_code = self.make_request("POST", f"/customers/{test_customer_id}/invoices", invoice_data)
+        if success and "id" in response:
+            self.invoice_id = response["id"]
+            self.log_result("invoices", "Create Invoice", True, f"Created invoice with ID: {self.invoice_id}")
+        else:
+            self.log_result("invoices", "Create Invoice", False, f"Failed to create invoice: {response}", response)
+            return
+        
+        # Test GET invoices after creation
+        success, response, status_code = self.make_request("GET", f"/customers/{test_customer_id}/invoices")
+        if success and isinstance(response, list) and len(response) > initial_count:
+            found_invoice = any(inv.get("id") == self.invoice_id for inv in response)
+            if found_invoice:
+                self.log_result("invoices", "Get Invoices (After Create)", True, f"Retrieved {len(response)} invoices including new invoice")
+            else:
+                self.log_result("invoices", "Get Invoices (After Create)", False, "New invoice not found in list")
+        else:
+            self.log_result("invoices", "Get Invoices (After Create)", False, f"Failed to get invoices after creation: {response}", response)
+        
+        # Test PUT - Update invoice to Partially Paid
+        update_data = {
+            "paid_amount": 25000.0,
+            "status": "Partially Paid"
+        }
+        
+        success, response, status_code = self.make_request("PUT", f"/customers/{test_customer_id}/invoices/{self.invoice_id}", update_data)
+        if success and "message" in response:
+            self.log_result("invoices", "Update Invoice (Partially Paid)", True, f"Successfully updated invoice to Partially Paid")
+        else:
+            self.log_result("invoices", "Update Invoice (Partially Paid)", False, f"Failed to update invoice: {response}", response)
+        
+        # Test PUT - Update invoice to Paid
+        update_data = {
+            "paid_amount": 50000.0,
+            "status": "Paid"
+        }
+        
+        success, response, status_code = self.make_request("PUT", f"/customers/{test_customer_id}/invoices/{self.invoice_id}", update_data)
+        if success and "message" in response:
+            self.log_result("invoices", "Update Invoice (Paid)", True, f"Successfully updated invoice to Paid")
+        else:
+            self.log_result("invoices", "Update Invoice (Paid)", False, f"Failed to update invoice to Paid: {response}", response)
+        
+        # Test edge case - Create invoice without required fields
+        invalid_invoice_data = {
+            "invoice_number": "INV-2025-002"
+            # Missing required fields: invoice_date, invoice_amount, due_date
+        }
+        
+        success, response, status_code = self.make_request("POST", f"/customers/{test_customer_id}/invoices", invalid_invoice_data)
+        if not success and status_code >= 400:
+            self.log_result("invoices", "Create Invoice (Invalid Data)", True, "Correctly rejected invoice with missing required fields")
+        else:
+            self.log_result("invoices", "Create Invoice (Invalid Data)", False, f"Should have rejected invalid invoice data: {response}", response)
+        
+        # Test DELETE - Delete invoice
+        success, response, status_code = self.make_request("DELETE", f"/customers/{test_customer_id}/invoices/{self.invoice_id}")
+        if success and "message" in response:
+            self.log_result("invoices", "Delete Invoice", True, f"Successfully deleted invoice {self.invoice_id}")
+        else:
+            self.log_result("invoices", "Delete Invoice", False, f"Failed to delete invoice: {response}", response)
+        
+        # Verify invoice was deleted
+        success, response, status_code = self.make_request("GET", f"/customers/{test_customer_id}/invoices")
+        if success and isinstance(response, list):
+            found_invoice = any(inv.get("id") == self.invoice_id for inv in response)
+            if not found_invoice:
+                self.log_result("invoices", "Verify Invoice Deletion", True, "Invoice successfully removed from list")
+            else:
+                self.log_result("invoices", "Verify Invoice Deletion", False, "Invoice still found in list after deletion")
+        else:
+            self.log_result("invoices", "Verify Invoice Deletion", False, f"Failed to verify invoice deletion: {response}", response)
+
+    def test_churn_api(self):
+        """Test Churn APIs"""
+        print("\n=== Testing Churn APIs ===")
+        
+        # Get a test customer (not customer_1 as specified in review request)
+        success, customers_response, status_code = self.make_request("GET", "/customers")
+        if not success or not isinstance(customers_response, list) or len(customers_response) < 2:
+            self.log_result("churn", "Churn API Setup", False, "Need at least 2 customers for churn testing")
+            return
+        
+        # Use second customer for churn testing (not customer_1)
+        test_customer = customers_response[1]
+        self.churn_customer_id = test_customer["id"]
+        
+        # Test GET churn records (initially empty or existing)
+        success, response, status_code = self.make_request("GET", "/churn-records")
+        if success and isinstance(response, list):
+            initial_churn_count = len(response)
+            self.log_result("churn", "Get Churn Records (Initial)", True, f"Retrieved {initial_churn_count} churn records")
+        else:
+            self.log_result("churn", "Get Churn Records (Initial)", False, f"Failed to get churn records: {response}", response)
+        
+        # Test PUT - Record churn with all mandatory fields
+        churn_request_data = {
+            "account_status": "Churn",
+            "churn_data": {
+                "churn_type": "Logo Churn",
+                "effective_churn_date": "2025-02-01",
+                "revenue_impact": 100000.0,
+                "contract_end_date": "2025-01-31",
+                "primary_reason": "Product Fit Issues",
+                "secondary_reasons": ["Pricing Concerns", "Competitor Switch"],
+                "could_have_been_prevented": "Yes",
+                "owner_responsible": "CSM",
+                "action_taken_before_churn": "Multiple retention calls and discount offers",
+                "customer_feedback": "Product didn't meet their specific industry requirements",
+                "internal_notes": "Customer was flagged as at-risk 3 months ago but retention efforts were unsuccessful"
+            }
+        }
+        
+        success, response, status_code = self.make_request("PUT", f"/customers/{self.churn_customer_id}/churn", churn_request_data)
+        if success and "churn_record_id" in response:
+            self.churn_record_id = response["churn_record_id"]
+            self.log_result("churn", "Record Churn", True, f"Successfully recorded churn with ID: {self.churn_record_id}")
+        else:
+            self.log_result("churn", "Record Churn", False, f"Failed to record churn: {response}", response)
+            return
+        
+        # Test GET - Verify churn record was created
+        success, response, status_code = self.make_request("GET", "/churn-records")
+        if success and isinstance(response, list):
+            found_churn = any(record.get("id") == self.churn_record_id for record in response)
+            if found_churn:
+                self.log_result("churn", "Verify Churn Record Created", True, f"Churn record found in list of {len(response)} records")
+            else:
+                self.log_result("churn", "Verify Churn Record Created", False, "Churn record not found in list")
+        else:
+            self.log_result("churn", "Verify Churn Record Created", False, f"Failed to verify churn record: {response}", response)
+        
+        # Test GET - Get specific customer's churn record
+        success, response, status_code = self.make_request("GET", f"/customers/{self.churn_customer_id}/churn-record")
+        if success and "id" in response and response["id"] == self.churn_record_id:
+            self.log_result("churn", "Get Customer Churn Record", True, f"Retrieved specific churn record for customer")
+        else:
+            self.log_result("churn", "Get Customer Churn Record", False, f"Failed to get customer churn record: {response}", response)
+        
+        # Test GET - Verify customer status changed to "Churn"
+        success, response, status_code = self.make_request("GET", f"/customers/{self.churn_customer_id}")
+        if success and "account_status" in response:
+            if response["account_status"] == "Churn":
+                self.log_result("churn", "Verify Customer Status Change", True, f"Customer status correctly changed to Churn")
+            else:
+                self.log_result("churn", "Verify Customer Status Change", False, f"Expected status 'Churn', got '{response['account_status']}'")
+        else:
+            self.log_result("churn", "Verify Customer Status Change", False, f"Failed to verify customer status: {response}", response)
+        
+        # Test GET - Churn reports endpoint
+        success, response, status_code = self.make_request("GET", "/reports/churn")
+        if success and "total_churns" in response and "total_revenue_lost" in response:
+            total_churns = response["total_churns"]
+            total_revenue_lost = response["total_revenue_lost"]
+            by_reason = response.get("by_reason", [])
+            by_csm = response.get("by_csm", [])
+            by_type = response.get("by_type", [])
+            
+            self.log_result("churn", "Get Churn Analytics", True, 
+                          f"Retrieved churn analytics: {total_churns} churns, ₹{total_revenue_lost} revenue lost")
+            
+            # Verify our churn is included in analytics
+            if total_churns > 0:
+                self.log_result("churn", "Verify Churn in Analytics", True, "Churn analytics include aggregated data")
+            else:
+                self.log_result("churn", "Verify Churn in Analytics", False, "No churns found in analytics")
+        else:
+            self.log_result("churn", "Get Churn Analytics", False, f"Failed to get churn analytics: {response}", response)
+        
+        # Test edge case - Record churn without mandatory fields
+        invalid_churn_data = {
+            "account_status": "Churn",
+            "churn_data": {
+                "churn_type": "Logo Churn"
+                # Missing required fields: effective_churn_date, revenue_impact, primary_reason, etc.
+            }
+        }
+        
+        # Use a different customer for this test
+        if len(customers_response) > 2:
+            test_customer_2 = customers_response[2]["id"]
+            success, response, status_code = self.make_request("PUT", f"/customers/{test_customer_2}/churn", invalid_churn_data)
+            if not success and status_code >= 400:
+                self.log_result("churn", "Record Churn (Invalid Data)", True, "Correctly rejected churn with missing mandatory fields")
+            else:
+                self.log_result("churn", "Record Churn (Invalid Data)", False, f"Should have rejected invalid churn data: {response}", response)
+        else:
+            self.log_result("churn", "Record Churn (Invalid Data)", False, "Not enough customers to test invalid churn data")
+
     def print_summary(self):
         """Print test summary"""
         print("\n" + "="*60)
