@@ -279,6 +279,30 @@ backend:
         agent: "testing"
         comment: "✅ Document APIs working: POST /api/customers/{customer_id}/documents successfully adds documents with metadata (type, title, description, URL, file info). GET /api/customers/{customer_id}/documents successfully retrieves document list. Both APIs working correctly with proper data persistence and user attribution."
 
+  - task: "Invoice Management APIs"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ Invoice APIs working perfectly: POST /api/customers/{customer_id}/invoices creates invoices with all required fields (invoice_number, invoice_date, invoice_amount, due_date, status). GET /api/customers/{customer_id}/invoices retrieves customer invoices. PUT /api/customers/{customer_id}/invoices/{invoice_id} updates invoice status (Draft→Partially Paid→Paid) and paid amounts. DELETE /api/customers/{customer_id}/invoices/{invoice_id} removes invoices. Proper validation rejects incomplete data. Auto-creates commercial risk for overdue invoices. All CRUD operations working correctly."
+
+  - task: "Churn Management APIs"
+    implemented: true
+    working: true
+    file: "/app/backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "✅ Churn APIs working perfectly: PUT /api/customers/{customer_id}/churn records churn with comprehensive data (churn_type, effective_churn_date, revenue_impact, primary_reason, secondary_reasons, could_have_been_prevented, owner_responsible, etc.). Automatically updates customer account_status to 'Churn' and health_status to 'Critical'. GET /api/churn-records retrieves all churn records. GET /api/customers/{customer_id}/churn-record gets specific customer churn. GET /api/reports/churn provides analytics (total_churns, total_revenue_lost, by_reason, by_csm, by_type). All churn workflows working correctly. Minor: Could have stricter validation for incomplete data but core functionality perfect."
+
 frontend:
   - task: "Login Page"
     implemented: true
